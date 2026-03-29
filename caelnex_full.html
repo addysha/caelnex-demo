@@ -1,0 +1,1143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CAELNEX — Mission Continuity Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg:       #0F0E0D;
+  --bg1:      #161412;
+  --bg2:      #1C1A17;
+  --bg3:      #242018;
+  --border:   rgba(255,255,255,0.06);
+  --border2:  rgba(255,255,255,0.10);
+  --text0:    #F0EDE8;
+  --text1:    #9A9488;
+  --text2:    #5A5550;
+  --accent:   #C96B42;
+  --accent2:  #E8834F;
+  --gold:     #D4A843;
+  --teal:     #3ABFB0;
+  --red:      #E05555;
+  --green:    #4CAF7A;
+  --blue:     #5B9BD5;
+  --mono:     'JetBrains Mono', monospace;
+  --sans:     'Space Grotesk', sans-serif;
+}
+
+html,body{height:100%;background:var(--bg);color:var(--text0);font-family:var(--sans);overflow:hidden}
+
+/* ─── SHELL ─── */
+.shell{display:grid;grid-template-rows:52px 1fr;grid-template-columns:240px 1fr 300px;height:100vh}
+
+/* ─── TOPBAR ─── */
+.topbar{grid-column:1/-1;background:var(--bg1);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:0;z-index:100;position:relative}
+.logo{font-family:var(--mono);font-size:16px;font-weight:600;letter-spacing:0.15em;color:var(--accent);margin-right:28px;flex-shrink:0}
+.logo em{color:var(--text2);font-style:normal;font-weight:300}
+.mission-tag{font-size:11px;color:var(--text1);letter-spacing:0.05em;padding:0 20px;border-left:1px solid var(--border);border-right:1px solid var(--border);height:100%;display:flex;align-items:center;gap:8px}
+.pulse{width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0;animation:glow 2s infinite}
+@keyframes glow{0%,100%{box-shadow:0 0 4px var(--green)}50%{box-shadow:0 0 12px var(--green),0 0 20px var(--green)}}
+.top-right{margin-left:auto;display:flex;align-items:center;gap:20px;font-size:11px;font-family:var(--mono);color:var(--text1)}
+.top-right .lval{color:var(--gold)}
+.top-right .sep{color:var(--border2)}
+.ai-indicator{display:flex;align-items:center;gap:6px;padding:4px 10px;border:1px solid var(--accent);border-radius:3px;font-size:10px;color:var(--accent);letter-spacing:0.06em}
+.ai-dot{width:5px;height:5px;border-radius:50%;background:var(--accent);animation:glow2 1.5s infinite}
+@keyframes glow2{0%,100%{opacity:1}50%{opacity:0.3}}
+
+/* ─── SIDEBAR ─── */
+.sidebar{background:var(--bg1);border-right:1px solid var(--border);overflow-y:auto;display:flex;flex-direction:column}
+.sidebar::-webkit-scrollbar{width:3px}
+.sidebar::-webkit-scrollbar-track{background:transparent}
+.sidebar::-webkit-scrollbar-thumb{background:var(--border2)}
+
+.vehicle-card{margin:14px;background:var(--bg2);border:1px solid var(--border2);border-radius:6px;padding:14px;position:relative;overflow:hidden}
+.vehicle-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--gold))}
+.vid{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--accent);letter-spacing:0.1em}
+.vname{font-size:11px;color:var(--text1);margin-top:3px}
+.rbar-wrap{margin-top:12px}
+.rbar-labels{display:flex;justify-content:space-between;font-size:10px;font-family:var(--mono);color:var(--text1);margin-bottom:5px}
+.rbar-labels strong{color:var(--green)}
+.rbar{height:3px;background:var(--bg3);border-radius:2px;overflow:hidden}
+.rbar-fill{height:100%;width:78%;background:linear-gradient(90deg,var(--accent),var(--gold),var(--green));border-radius:2px}
+.rbar-segments{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-top:6px}
+.rseg{height:3px;border-radius:1px;opacity:0.7}
+
+.nav-group{padding:8px 0 4px}
+.nav-label{font-size:9px;letter-spacing:0.18em;color:var(--text2);padding:6px 16px 4px;text-transform:uppercase;font-family:var(--mono)}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 16px;font-size:12px;color:var(--text1);cursor:pointer;transition:all 0.15s;border-left:2px solid transparent;user-select:none}
+.nav-item:hover{background:var(--bg2);color:var(--text0)}
+.nav-item.active{background:var(--bg3);color:var(--accent);border-left-color:var(--accent)}
+.nav-icon{width:16px;text-align:center;font-size:13px;flex-shrink:0}
+.nav-badge{margin-left:auto;font-size:9px;padding:2px 6px;border-radius:2px;font-family:var(--mono)}
+.nb-red{background:rgba(224,85,85,0.15);color:var(--red);border:1px solid rgba(224,85,85,0.3)}
+.nb-amber{background:rgba(212,168,67,0.15);color:var(--gold);border:1px solid rgba(212,168,67,0.3)}
+.nb-green{background:rgba(76,175,122,0.15);color:var(--green);border:1px solid rgba(76,175,122,0.3)}
+.nav-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.nd-g{background:var(--green)}.nd-a{background:var(--gold)}.nd-r{background:var(--red)}.nd-b{background:var(--blue)}.nd-t{background:var(--teal)}.nd-x{background:var(--text2)}
+
+/* ─── MAIN ─── */
+.main{background:var(--bg);overflow-y:auto;padding:20px}
+.main::-webkit-scrollbar{width:3px}
+.main::-webkit-scrollbar-track{background:transparent}
+.main::-webkit-scrollbar-thumb{background:var(--border2)}
+.page{display:none}
+.page.active{display:block}
+
+/* ─── RIGHT PANEL ─── */
+.rpanel{background:var(--bg1);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.rpanel-header{padding:14px 16px;border-bottom:1px solid var(--border);font-size:10px;font-family:var(--mono);letter-spacing:0.12em;color:var(--text2);text-transform:uppercase;display:flex;align-items:center;justify-content:space-between}
+.rpanel-header .rstatus{color:var(--teal);font-size:9px}
+
+/* AI Chat */
+.chat-wrap{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
+.chat-wrap::-webkit-scrollbar{width:3px}
+.chat-wrap::-webkit-scrollbar-thumb{background:var(--border2)}
+.chat-msg{padding:10px 12px;border-radius:4px;font-size:12px;line-height:1.6}
+.msg-system{background:var(--bg2);border:1px solid var(--border);color:var(--text1);font-family:var(--mono);font-size:11px}
+.msg-user{background:var(--bg3);border:1px solid var(--border2);color:var(--text0);border-right:2px solid var(--accent)}
+.msg-ai{background:rgba(201,107,66,0.06);border:1px solid rgba(201,107,66,0.15);color:var(--text0);border-left:2px solid var(--teal)}
+.msg-label{font-size:9px;letter-spacing:0.1em;color:var(--text2);margin-bottom:5px;font-family:var(--mono);text-transform:uppercase}
+.msg-ai .msg-label{color:var(--teal)}
+.msg-user .msg-label{color:var(--accent)}
+.thinking{display:flex;gap:4px;align-items:center;padding:4px 0}
+.thinking span{width:5px;height:5px;border-radius:50%;background:var(--teal);animation:bounce 1.2s infinite}
+.thinking span:nth-child(2){animation-delay:0.2s}
+.thinking span:nth-child(3){animation-delay:0.4s}
+@keyframes bounce{0%,100%{opacity:0.3;transform:translateY(0)}50%{opacity:1;transform:translateY(-3px)}}
+
+.chat-input-wrap{padding:10px 12px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:6px}
+.chat-suggestions{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:2px}
+.suggestion{font-size:10px;padding:3px 8px;border:1px solid var(--border2);border-radius:2px;color:var(--text1);cursor:pointer;transition:all 0.15s;font-family:var(--mono);background:transparent}
+.suggestion:hover{border-color:var(--accent);color:var(--accent);background:rgba(201,107,66,0.06)}
+.chat-row{display:flex;gap:6px}
+.chat-input{flex:1;background:var(--bg2);border:1px solid var(--border2);color:var(--text0);padding:8px 10px;font-family:var(--mono);font-size:11px;border-radius:3px;outline:none;resize:none;height:60px;transition:border-color 0.15s}
+.chat-input:focus{border-color:var(--accent)}
+.chat-input::placeholder{color:var(--text2)}
+.send-btn{background:var(--accent);border:none;color:white;padding:0 14px;border-radius:3px;cursor:pointer;font-family:var(--mono);font-size:11px;font-weight:500;transition:all 0.15s;letter-spacing:0.05em}
+.send-btn:hover{background:var(--accent2)}
+.send-btn:disabled{opacity:0.4;cursor:not-allowed}
+
+/* ─── SECTION HEADERS ─── */
+.sec-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.sec-title{font-size:13px;font-weight:600;letter-spacing:0.08em;color:var(--text0);text-transform:uppercase}
+.sec-sub{font-size:11px;color:var(--text2);margin-top:2px}
+.btn{font-family:var(--mono);font-size:10px;padding:5px 12px;border:1px solid var(--border2);background:transparent;color:var(--text1);cursor:pointer;letter-spacing:0.06em;border-radius:2px;transition:all 0.15s}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn-accent{border-color:var(--accent);color:var(--accent);background:rgba(201,107,66,0.08)}
+
+/* ─── METRICS ─── */
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:20px}
+.metric{background:var(--bg1);border:1px solid var(--border);padding:14px;border-radius:4px;position:relative;overflow:hidden;cursor:pointer;transition:border-color 0.2s}
+.metric:hover{border-color:var(--border2)}
+.metric-accent{border-top:2px solid var(--accent)}
+.metric-gold{border-top:2px solid var(--gold)}
+.metric-teal{border-top:2px solid var(--teal)}
+.metric-red{border-top:2px solid var(--red)}
+.metric-label{font-size:9px;letter-spacing:0.14em;color:var(--text2);text-transform:uppercase;font-family:var(--mono)}
+.metric-val{font-size:24px;font-weight:700;margin:6px 0 4px;font-family:var(--mono)}
+.metric-sub{font-size:10px;color:var(--text2)}
+.mv-green{color:var(--green)}.mv-gold{color:var(--gold)}.mv-red{color:var(--red)}.mv-accent{color:var(--accent)}
+
+/* ─── GRAPH CANVAS ─── */
+.graph-wrap{background:var(--bg1);border:1px solid var(--border);border-radius:6px;margin-bottom:20px;overflow:hidden}
+.graph-toolbar{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--border)}
+.graph-toolbar span{font-size:10px;font-family:var(--mono);color:var(--text2);letter-spacing:0.1em}
+.graph-toolbar .glabel{color:var(--text1)}
+.g-canvas{position:relative;height:320px;overflow:hidden;background-image:radial-gradient(circle,rgba(255,255,255,0.03) 1px,transparent 1px);background-size:24px 24px}
+.gnode{position:absolute;padding:8px 12px;border-radius:5px;font-size:10px;font-family:var(--mono);cursor:pointer;transition:all 0.2s;user-select:none;z-index:2}
+.gnode:hover{transform:scale(1.05);z-index:10}
+.gnode-title{font-weight:600;letter-spacing:0.06em;font-size:10px}
+.gnode-sub{font-size:9px;opacity:0.7;margin-top:2px}
+.gn-component{background:rgba(201,107,66,0.15);border:1px solid rgba(201,107,66,0.4);color:var(--accent)}
+.gn-spec{background:rgba(91,155,213,0.15);border:1px solid rgba(91,155,213,0.4);color:var(--blue)}
+.gn-build{background:rgba(58,191,176,0.15);border:1px solid rgba(58,191,176,0.4);color:var(--teal)}
+.gn-decision{background:rgba(212,168,67,0.15);border:1px solid rgba(212,168,67,0.4);color:var(--gold)}
+.gn-supplier{background:rgba(76,175,122,0.15);border:1px solid rgba(76,175,122,0.4);color:var(--green)}
+.gn-anomaly{background:rgba(224,85,85,0.15);border:1px solid rgba(224,85,85,0.4);color:var(--red)}
+.gn-campaign{background:rgba(150,100,200,0.15);border:1px solid rgba(150,100,200,0.4);color:#B07FE8}
+svg.g-svg{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1}
+
+/* ─── CHECKLIST ─── */
+.checklist{display:flex;flex-direction:column;gap:6px;margin-bottom:20px}
+.check-item{display:flex;align-items:center;gap:12px;background:var(--bg1);border:1px solid var(--border);padding:10px 14px;border-radius:4px;transition:all 0.2s;cursor:pointer}
+.check-item:hover{border-color:var(--border2)}
+.check-item.ok{border-left:3px solid var(--green)}
+.check-item.warn{border-left:3px solid var(--gold)}
+.check-item.fail{border-left:3px solid var(--red)}
+.check-icon{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0}
+.ci-ok{background:rgba(76,175,122,0.2);color:var(--green)}
+.ci-warn{background:rgba(212,168,67,0.2);color:var(--gold)}
+.ci-fail{background:rgba(224,85,85,0.2);color:var(--red)}
+.check-body{flex:1}
+.check-title{font-size:12px;font-weight:500}
+.check-detail{font-size:10px;color:var(--text2);margin-top:2px;font-family:var(--mono)}
+.check-organ{font-size:9px;padding:2px 6px;border-radius:2px;background:var(--bg3);color:var(--text2);font-family:var(--mono);margin-left:auto;flex-shrink:0}
+.check-time{font-size:9px;color:var(--text2);font-family:var(--mono)}
+
+/* ─── ORGAN GRID ─── */
+.organ-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
+.organ-card{background:var(--bg1);border:1px solid var(--border);border-radius:5px;padding:14px;cursor:pointer;transition:all 0.2s;position:relative;overflow:hidden}
+.organ-card:hover{border-color:var(--border2);background:var(--bg2)}
+.organ-card.active-organ{border-color:var(--accent);background:rgba(201,107,66,0.06)}
+.organ-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px}
+.oc1::after{background:var(--accent)}.oc2::after{background:var(--teal)}.oc3::after{background:var(--blue)}.oc4::after{background:var(--green)}.oc5::after{background:var(--gold)}.oc6::after{background:var(--red)}.oc7::after{background:linear-gradient(90deg,var(--accent),var(--gold),var(--green))}
+.organ-num{font-size:9px;font-family:var(--mono);letter-spacing:0.12em;color:var(--text2);margin-bottom:6px}
+.organ-name{font-size:13px;font-weight:600;margin-bottom:4px}
+.organ-mission{font-size:10px;color:var(--text2);line-height:1.5}
+.organ-score{display:flex;align-items:center;gap:6px;margin-top:10px}
+.oscore-bar{flex:1;height:3px;background:var(--bg3);border-radius:2px;overflow:hidden}
+.oscore-fill{height:100%;border-radius:2px;transition:width 1s ease}
+.oscore-val{font-size:10px;font-family:var(--mono)}
+
+/* ─── SUPPLY CHAIN TABLE ─── */
+.data-table{width:100%;border-collapse:collapse;margin-bottom:20px;font-size:11px}
+.data-table th{text-align:left;padding:8px 12px;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;font-family:var(--mono);color:var(--text2);border-bottom:1px solid var(--border);font-weight:500}
+.data-table td{padding:9px 12px;border-bottom:1px solid var(--border);color:var(--text1);font-family:var(--mono)}
+.data-table tr:hover td{background:var(--bg2);color:var(--text0)}
+.data-table tr.flagged td{background:rgba(224,85,85,0.04)}
+.data-table tr.flagged:hover td{background:rgba(224,85,85,0.08)}
+.rev-ok{color:var(--green)}.rev-warn{color:var(--red)}.rev-pend{color:var(--gold)}
+.part-name{color:var(--text0);font-weight:500}
+
+/* ─── ANOMALY ─── */
+.anomaly-list{display:flex;flex-direction:column;gap:8px;margin-bottom:20px}
+.anomaly{background:var(--bg1);border:1px solid var(--border);border-radius:4px;padding:12px 14px;cursor:pointer;transition:border-color 0.2s}
+.anomaly:hover{border-color:var(--border2)}
+.anomaly.open{border-left:3px solid var(--red)}
+.anomaly.closed{border-left:3px solid var(--green);opacity:0.7}
+.an-head{display:flex;align-items:center;gap:10px}
+.an-id{font-family:var(--mono);font-size:10px;color:var(--text2)}
+.an-title{font-size:12px;font-weight:500;flex:1}
+.an-status{font-size:9px;padding:2px 7px;border-radius:2px;font-family:var(--mono)}
+.as-open{background:rgba(224,85,85,0.15);color:var(--red);border:1px solid rgba(224,85,85,0.3)}
+.as-closed{background:rgba(76,175,122,0.15);color:var(--green);border:1px solid rgba(76,175,122,0.3)}
+.an-detail{font-size:11px;color:var(--text2);margin-top:6px;line-height:1.5;font-family:var(--mono)}
+
+/* ─── AUDIT LOG ─── */
+.audit-log{font-family:var(--mono);font-size:11px;display:flex;flex-direction:column;gap:4px;margin-bottom:20px}
+.audit-entry{display:flex;gap:10px;padding:7px 10px;background:var(--bg1);border:1px solid var(--border);border-radius:3px;align-items:flex-start}
+.audit-entry:hover{background:var(--bg2)}
+.ae-time{color:var(--text2);flex-shrink:0;font-size:10px;margin-top:1px}
+.ae-user{color:var(--accent);flex-shrink:0}
+.ae-action{color:var(--text0);flex:1}
+.ae-organ{color:var(--teal);flex-shrink:0;font-size:10px}
+.ae-hash{color:var(--text2);font-size:9px;letter-spacing:0.05em}
+
+/* ─── READINESS BOARD ─── */
+.readiness-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:20px}
+.readiness-organ{background:var(--bg1);border:1px solid var(--border);border-radius:5px;padding:14px}
+.ro-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.ro-name{font-size:12px;font-weight:500}
+.ro-score{font-family:var(--mono);font-size:18px;font-weight:600}
+.ro-items{display:flex;flex-direction:column;gap:4px}
+.ro-item{display:flex;align-items:center;justify-content:space-between;font-size:10px;font-family:var(--mono);padding:3px 0;border-bottom:1px solid var(--border);color:var(--text1)}
+.ro-item:last-child{border-bottom:none}
+.ro-item span:last-child{color:var(--text0)}
+.rist-ok{color:var(--green)!important}.rist-warn{color:var(--gold)!important}.rist-fail{color:var(--red)!important}
+
+/* ─── FLIGHT SW ─── */
+.build-table{width:100%;border-collapse:collapse;margin-bottom:20px;font-size:11px;font-family:var(--mono)}
+.build-table th{text-align:left;padding:8px 12px;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text2);border-bottom:1px solid var(--border);font-weight:500}
+.build-table td{padding:9px 12px;border-bottom:1px solid var(--border);color:var(--text1)}
+.build-table tr:hover td{background:var(--bg2)}
+.build-ok{color:var(--green)}.build-warn{color:var(--gold)}.build-fail{color:var(--red)}
+.hash-val{font-size:10px;color:var(--text2);letter-spacing:0.04em}
+
+/* ─── NODE INSPECTOR (right panel) ─── */
+.inspector{padding:12px;font-size:11px;font-family:var(--mono)}
+.insp-type{font-size:9px;letter-spacing:0.14em;color:var(--teal);margin-bottom:6px;text-transform:uppercase}
+.insp-id{font-size:14px;font-weight:600;color:var(--text0);margin-bottom:10px}
+.insp-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)}
+.insp-key{color:var(--text2)}
+.insp-val{color:var(--text0);text-align:right;max-width:60%}
+.insp-edges{margin-top:12px}
+.insp-edge-label{font-size:9px;letter-spacing:0.12em;color:var(--text2);margin-bottom:6px;text-transform:uppercase}
+.edge-chip{display:inline-flex;align-items:center;gap:5px;background:var(--bg2);border:1px solid var(--border2);padding:3px 8px;border-radius:3px;margin:3px;font-size:10px;cursor:pointer;transition:all 0.15s}
+.edge-chip:hover{border-color:var(--accent);color:var(--accent)}
+.edge-arrow{color:var(--text2)}
+
+/* ─── ANIMATIONS ─── */
+@keyframes fadein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.fadein{animation:fadein 0.3s ease forwards}
+
+/* ─── SCROLLBAR ─── */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+/* ─── COUNTDOWN ─── */
+.countdown{display:flex;gap:12px;margin-bottom:20px}
+.cd-block{background:var(--bg1);border:1px solid var(--border);border-radius:4px;padding:10px 14px;text-align:center;min-width:64px}
+.cd-val{font-family:var(--mono);font-size:22px;font-weight:600;color:var(--accent)}
+.cd-label{font-size:9px;letter-spacing:0.12em;color:var(--text2);text-transform:uppercase;margin-top:2px}
+
+/* ─── TAB BAR ─── */
+.tabbar{display:flex;gap:2px;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:0}
+.tab{font-size:11px;padding:7px 14px;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all 0.15s;letter-spacing:0.04em;font-family:var(--mono)}
+.tab:hover{color:var(--text1)}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+
+/* ─── CRIT PATH ─── */
+.crit-path{display:flex;align-items:center;gap:0;margin-bottom:20px;overflow-x:auto;padding-bottom:8px}
+.cp-step{display:flex;align-items:center;flex-shrink:0}
+.cp-box{padding:8px 12px;background:var(--bg1);border:1px solid var(--border);border-radius:4px;font-size:10px;font-family:var(--mono);text-align:center;min-width:90px}
+.cp-box .cp-name{color:var(--text0);font-weight:500}
+.cp-box .cp-time{color:var(--text2);font-size:9px;margin-top:2px}
+.cp-box.cp-done{border-color:var(--green);background:rgba(76,175,122,0.06)}
+.cp-box.cp-active{border-color:var(--gold);background:rgba(212,168,67,0.08)}
+.cp-box.cp-block{border-color:var(--red);background:rgba(224,85,85,0.08)}
+.cp-arrow{color:var(--text2);margin:0 6px;font-size:12px}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="logo">CAEL<em>NEX</em></div>
+  <div class="mission-tag">
+    <div class="pulse"></div>
+    <span>Mission: <strong style="color:var(--text0)">ELK-001</strong> — Electron · Pad A · Mahia Peninsula</span>
+  </div>
+  <div class="top-right">
+    <span>L-<span class="lval" id="countdown-inline">18d 04h 22m</span></span>
+    <span class="sep">|</span>
+    <span>READINESS <span class="lval">78%</span></span>
+    <span class="sep">|</span>
+    <span>OPEN ANO <span style="color:var(--red)">3</span></span>
+    <span class="sep">|</span>
+    <div class="ai-indicator"><div class="ai-dot"></div>AI ACTIVE</div>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="vehicle-card">
+    <div class="vid">ELK-001</div>
+    <div class="vname">Electron · "Still Testing" · Vehicle #38</div>
+    <div class="rbar-wrap">
+      <div class="rbar-labels"><span>Launch Readiness</span><strong>78%</strong></div>
+      <div class="rbar"><div class="rbar-fill"></div></div>
+      <div class="rbar-segments" style="margin-top:5px">
+        <div class="rseg" style="background:var(--green)"></div>
+        <div class="rseg" style="background:var(--green)"></div>
+        <div class="rseg" style="background:var(--gold)"></div>
+        <div class="rseg" style="background:var(--green)"></div>
+        <div class="rseg" style="background:var(--gold)"></div>
+        <div class="rseg" style="background:var(--green)"></div>
+        <div class="rseg" style="background:var(--red)"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-label">Campaign</div>
+    <div class="nav-item active" onclick="showPage('dashboard')">
+      <div class="nav-icon">⬡</div><span>Dashboard</span>
+      <div class="nav-badge nb-amber">3 flags</div>
+    </div>
+    <div class="nav-item" onclick="showPage('graph')">
+      <div class="nav-icon">◈</div><span>Config Graph</span>
+    </div>
+    <div class="nav-item" onclick="showPage('readiness')">
+      <div class="nav-icon">◎</div><span>Readiness Board</span>
+      <div class="nav-badge nb-amber">2 warn</div>
+    </div>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-label">Organs</div>
+    <div class="nav-item" onclick="showPage('engineering')">
+      <div class="nav-dot nd-a"></div><span>O1 — Engineering</span>
+      <div class="nav-badge nb-amber">1</div>
+    </div>
+    <div class="nav-item" onclick="showPage('flightsw')">
+      <div class="nav-dot nd-t"></div><span>O2 — Flight Software</span>
+      <div class="nav-badge nb-green">OK</div>
+    </div>
+    <div class="nav-item" onclick="showPage('manufacturing')">
+      <div class="nav-dot nd-b"></div><span>O3 — Manufacturing</span>
+      <div class="nav-badge nb-green">OK</div>
+    </div>
+    <div class="nav-item" onclick="showPage('supplychain')">
+      <div class="nav-dot nd-r"></div><span>O4 — Supply Chain</span>
+      <div class="nav-badge nb-red">2 flags</div>
+    </div>
+    <div class="nav-item" onclick="showPage('launchops')">
+      <div class="nav-dot nd-g"></div><span>O5 — Launch Ops</span>
+      <div class="nav-badge nb-amber">1</div>
+    </div>
+    <div class="nav-item" onclick="showPage('compliance')">
+      <div class="nav-dot nd-x"></div><span>O6 — Compliance</span>
+      <div class="nav-badge nb-green">OK</div>
+    </div>
+    <div class="nav-item" onclick="showPage('cie')">
+      <div class="nav-dot" style="background:linear-gradient(135deg,var(--accent),var(--gold))"></div>
+      <span>O7 — CIE</span>
+      <div class="nav-badge nb-red">ACTIVE</div>
+    </div>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-label">Intelligence</div>
+    <div class="nav-item" onclick="showPage('anomalies')">
+      <div class="nav-icon">⚠</div><span>Anomalies</span>
+      <div class="nav-badge nb-red">3 open</div>
+    </div>
+    <div class="nav-item" onclick="showPage('audit')">
+      <div class="nav-icon">⛓</div><span>Audit Log</span>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="main">
+
+<!-- DASHBOARD -->
+<div class="page active" id="page-dashboard">
+  <div class="sec-head">
+    <div><div class="sec-title">Mission Dashboard</div><div class="sec-sub">ELK-001 · Campaign Day 34 of 52 · L-18 days</div></div>
+    <button class="btn btn-accent" onclick="askAI('Give me a full campaign status summary for ELK-001 right now')">AI Summary</button>
+  </div>
+
+  <div class="countdown">
+    <div class="cd-block"><div class="cd-val" id="cd-d">18</div><div class="cd-label">Days</div></div>
+    <div class="cd-block"><div class="cd-val" id="cd-h">04</div><div class="cd-label">Hours</div></div>
+    <div class="cd-block"><div class="cd-val" id="cd-m">22</div><div class="cd-label">Mins</div></div>
+    <div class="cd-block"><div class="cd-val" id="cd-s">41</div><div class="cd-label">Secs</div></div>
+    <div style="flex:1;display:flex;align-items:center;justify-content:flex-end">
+      <div style="text-align:right">
+        <div style="font-size:11px;color:var(--text2);font-family:var(--mono)">LAUNCH WINDOW</div>
+        <div style="font-size:13px;font-weight:600;color:var(--gold);font-family:var(--mono)">2026-04-16 · 14:30 NZST</div>
+        <div style="font-size:10px;color:var(--text2);font-family:var(--mono);margin-top:2px">Pad A · Mahia Peninsula · Azimuth 083°</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="metrics">
+    <div class="metric metric-accent" onclick="askAI('What are the open configuration flags on ELK-001?')">
+      <div class="metric-label">Config Flags</div>
+      <div class="metric-val mv-accent">3</div>
+      <div class="metric-sub">2 engineering · 1 supply chain</div>
+    </div>
+    <div class="metric metric-gold" onclick="askAI('What are the open anomalies on ELK-001 and their dispositions?')">
+      <div class="metric-label">Open Anomalies</div>
+      <div class="metric-val mv-gold">3</div>
+      <div class="metric-sub">ANO-007, 011, 014 pending</div>
+    </div>
+    <div class="metric metric-teal" onclick="askAI('What is the build step completion rate for ELK-001?')">
+      <div class="metric-label">Build Steps</div>
+      <div class="metric-val" style="color:var(--teal)">214/274</div>
+      <div class="metric-sub">78% complete · 12 in progress</div>
+    </div>
+    <div class="metric metric-red" onclick="askAI('How many parts are pending incoming inspection on ELK-001?')">
+      <div class="metric-label">Parts Pending</div>
+      <div class="metric-val mv-red">7</div>
+      <div class="metric-sub">Awaiting dock inspection</div>
+    </div>
+  </div>
+
+  <div class="sec-head">
+    <div class="sec-title">Critical Path</div>
+  </div>
+  <div class="crit-path" style="margin-bottom:20px">
+    <div class="cp-step"><div class="cp-box cp-done"><div class="cp-name">Stage Integration</div><div class="cp-time">✓ Complete</div></div><div class="cp-arrow">→</div></div>
+    <div class="cp-step"><div class="cp-box cp-done"><div class="cp-name">Engine Install</div><div class="cp-time">✓ Complete</div></div><div class="cp-arrow">→</div></div>
+    <div class="cp-step"><div class="cp-box cp-active"><div class="cp-name">Avionics Bay</div><div class="cp-time">⏳ In Progress</div></div><div class="cp-arrow">→</div></div>
+    <div class="cp-step"><div class="cp-box cp-block"><div class="cp-name">Valve Inspection</div><div class="cp-time">🔴 Blocked</div></div><div class="cp-arrow">→</div></div>
+    <div class="cp-step"><div class="cp-box"><div class="cp-name">SW Load</div><div class="cp-time">Pending</div></div><div class="cp-arrow">→</div></div>
+    <div class="cp-step"><div class="cp-box"><div class="cp-name">Hot Fire</div><div class="cp-time">L-10d</div></div><div class="cp-arrow">→</div></div>
+    <div class="cp-step"><div class="cp-box"><div class="cp-name">Transport</div><div class="cp-time">L-5d</div></div><div class="cp-arrow">→</div></div>
+    <div class="cp-step"><div class="cp-box"><div class="cp-name">LAUNCH</div><div class="cp-time">2026-04-16</div></div></div>
+  </div>
+
+  <div class="sec-head">
+    <div class="sec-title">Active Flags — Organ 7 Intercepts</div>
+    <button class="btn" onclick="askAI('Explain each of the three active Organ 7 flags on ELK-001 and what needs to happen to clear them')">AI Triage</button>
+  </div>
+  <div class="checklist">
+    <div class="check-item fail" onclick="askAI('Tell me about the valve spec revision discrepancy flag on ELK-001 — what changed, who changed it, and what downstream systems are affected?')">
+      <div class="check-icon ci-fail">✕</div>
+      <div class="check-body">
+        <div class="check-title">Valve Spec Revision Mismatch — COMP-0441</div>
+        <div class="check-detail">Rev C installed · Rev D required · 4 downstream checklist items flagged · O1 change propagated 2h ago</div>
+      </div>
+      <div class="check-organ">O1 · O3 · O7</div>
+      <div class="check-time">2h ago</div>
+    </div>
+    <div class="check-item warn" onclick="askAI('Tell me about the bracket mismatch on part BR-4471-A — what was received versus what was ordered?')">
+      <div class="check-icon ci-warn">!</div>
+      <div class="check-body">
+        <div class="check-title">Incoming Part Revision Mismatch — BR-4471-A</div>
+        <div class="check-detail">Rev C received · Rev D on PO · Supplier portal not updated · SPI risk score elevated</div>
+      </div>
+      <div class="check-organ">O4 · O7</div>
+      <div class="check-time">6h ago</div>
+    </div>
+    <div class="check-item warn" onclick="askAI('Tell me about the GNC build validation gap — which hardware config is missing from the VALIDATED_AGAINST set?')">
+      <div class="check-icon ci-warn">!</div>
+      <div class="check-body">
+        <div class="check-title">GNC Build Missing VALIDATED_AGAINST Edge</div>
+        <div class="check-detail">Build v2.4.1-gnc · IMU-REV-C not in validation set · Load blocked pending re-test</div>
+      </div>
+      <div class="check-organ">O2 · O7</div>
+      <div class="check-time">1d ago</div>
+    </div>
+  </div>
+
+  <div class="sec-head"><div class="sec-title">Organ Snapshot</div></div>
+  <div class="organ-grid">
+    <div class="organ-card oc1" onclick="showPage('engineering');askAI('Give me a status update on Organ 1 Engineering for ELK-001')">
+      <div class="organ-num">ORGAN 01</div>
+      <div class="organ-name">Engineering</div>
+      <div class="organ-mission">Change propagation · decision nodes · PLM integration</div>
+      <div class="organ-score">
+        <div class="oscore-bar"><div class="oscore-fill" style="width:82%;background:var(--gold)"></div></div>
+        <div class="oscore-val" style="color:var(--gold)">82%</div>
+      </div>
+    </div>
+    <div class="organ-card oc2" onclick="showPage('flightsw');askAI('Give me a status update on Organ 2 Flight Software for ELK-001')">
+      <div class="organ-num">ORGAN 02</div>
+      <div class="organ-name">Flight Software</div>
+      <div class="organ-mission">Build registry · VALIDATED_AGAINST · hardware pairing</div>
+      <div class="organ-score">
+        <div class="oscore-bar"><div class="oscore-fill" style="width:90%;background:var(--green)"></div></div>
+        <div class="oscore-val" style="color:var(--green)">90%</div>
+      </div>
+    </div>
+    <div class="organ-card oc3" onclick="showPage('manufacturing');askAI('Give me a status update on Organ 3 Manufacturing for ELK-001')">
+      <div class="organ-num">ORGAN 03</div>
+      <div class="organ-name">Manufacturing</div>
+      <div class="organ-mission">Digital traveller · technician logging · sequence enforcement</div>
+      <div class="organ-score">
+        <div class="oscore-bar"><div class="oscore-fill" style="width:78%;background:var(--green)"></div></div>
+        <div class="oscore-val" style="color:var(--green)">78%</div>
+      </div>
+    </div>
+    <div class="organ-card oc4" onclick="showPage('supplychain');askAI('Give me a status update on Organ 4 Supply Chain for ELK-001 — are there any supplier risk flags?')">
+      <div class="organ-num">ORGAN 04</div>
+      <div class="organ-name">Supply Chain</div>
+      <div class="organ-mission">Part genealogy · supplier portal · fraud detection</div>
+      <div class="organ-score">
+        <div class="oscore-bar"><div class="oscore-fill" style="width:61%;background:var(--red)"></div></div>
+        <div class="oscore-val" style="color:var(--red)">61%</div>
+      </div>
+    </div>
+    <div class="organ-card oc5" onclick="showPage('launchops');askAI('What does the Organ 5 launch readiness board show for ELK-001 right now?')">
+      <div class="organ-num">ORGAN 05</div>
+      <div class="organ-name">Launch Ops</div>
+      <div class="organ-mission">Live readiness score · TAT engine · go/no-go</div>
+      <div class="organ-score">
+        <div class="oscore-bar"><div class="oscore-fill" style="width:75%;background:var(--gold)"></div></div>
+        <div class="oscore-val" style="color:var(--gold)">75%</div>
+      </div>
+    </div>
+    <div class="organ-card oc6" onclick="showPage('compliance');askAI('What is the compliance status for ELK-001 — ITAR, CMMC, audit trail?')">
+      <div class="organ-num">ORGAN 06</div>
+      <div class="organ-name">Compliance</div>
+      <div class="organ-mission">ITAR gating · audit chain · one-click export</div>
+      <div class="organ-score">
+        <div class="oscore-bar"><div class="oscore-fill" style="width:95%;background:var(--green)"></div></div>
+        <div class="oscore-val" style="color:var(--green)">95%</div>
+      </div>
+    </div>
+    <div class="organ-card oc7" style="grid-column:1/-1" onclick="showPage('cie');askAI('What is the Compliance Index Engine currently intercepting across all organs on ELK-001?')">
+      <div class="organ-num">ORGAN 07 — CROSS-CUTTING</div>
+      <div class="organ-name">Compliance Index Engine</div>
+      <div class="organ-mission">Pre-submission validation · activity zone monitor · cross-organ re-indexing · Poka-Yoke at organisational scale</div>
+      <div class="organ-score" style="margin-top:8px">
+        <div class="oscore-bar" style="height:4px"><div class="oscore-fill" style="width:100%;background:linear-gradient(90deg,var(--accent),var(--gold),var(--green))"></div></div>
+        <div class="oscore-val" style="color:var(--accent)">ALWAYS ON</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIG GRAPH -->
+<div class="page" id="page-graph">
+  <div class="sec-head">
+    <div><div class="sec-title">Configuration Graph</div><div class="sec-sub">ELK-001 · 312 nodes · 847 edges · live</div></div>
+    <button class="btn" onclick="askAI('Walk me through the configuration graph for ELK-001 — what are the most important node relationships right now?')">AI Explain</button>
+  </div>
+  <div class="graph-wrap">
+    <div class="graph-toolbar">
+      <span class="glabel">NODE TYPES:</span>
+      <span style="color:var(--accent)">◆ Component</span>
+      <span style="color:var(--blue)">◆ Specification</span>
+      <span style="color:var(--teal)">◆ Build</span>
+      <span style="color:var(--gold)">◆ Decision</span>
+      <span style="color:var(--green)">◆ Supplier</span>
+      <span style="color:var(--red)">◆ Anomaly</span>
+      <span style="color:#B07FE8">◆ Campaign</span>
+      <span style="margin-left:auto;color:var(--text2)">CLICK NODE TO INSPECT</span>
+    </div>
+    <div class="g-canvas" id="graphCanvas">
+      <svg class="g-svg" id="graphSvg"></svg>
+      <!-- Nodes positioned absolutely -->
+      <div class="gnode gn-campaign" style="left:42%;top:12%" onclick="inspectNode('campaign','CAMPAIGN-ELK-001','Campaign','Vehicle: ELK-001 | Phase: Integration | Day: 34/52 | TAT: On Track')">
+        <div class="gnode-title">CAMPAIGN-ELK-001</div><div class="gnode-sub">CampaignNode</div>
+      </div>
+      <div class="gnode gn-component" style="left:18%;top:32%" onclick="inspectNode('component','COMP-0441','Valve Assembly','Rev: D | Status: FLAGGED | Installed: Rev C | Organ: O1/O3')">
+        <div class="gnode-title">COMP-0441</div><div class="gnode-sub">Valve Assembly ⚠</div>
+      </div>
+      <div class="gnode gn-component" style="left:62%;top:28%" onclick="inspectNode('component','COMP-0238','Engine Rutherford #7','Rev: G | Status: OK | Installed: ✓ | Organ: O3')">
+        <div class="gnode-title">COMP-0238</div><div class="gnode-sub">Rutherford Engine #7</div>
+      </div>
+      <div class="gnode gn-component" style="left:38%;top:42%" onclick="inspectNode('component','BR-4471-A','Structural Bracket','Rev Required: D | Rev Received: C | Status: FLAGGED')">
+        <div class="gnode-title">BR-4471-A</div><div class="gnode-sub">Structural Bracket ⚠</div>
+      </div>
+      <div class="gnode gn-spec" style="left:6%;top:55%" onclick="inspectNode('spec','SPEC-VALVE-D','Valve Specification Rev D','Tensile: 450MPa min | Burst: 2.4x MEOP | Changed: 2d ago')">
+        <div class="gnode-title">SPEC-VALVE-D</div><div class="gnode-sub">Current Required Spec</div>
+      </div>
+      <div class="gnode gn-build" style="left:72%;top:48%" onclick="inspectNode('build','BUILD-v2.4.1-gnc','GNC Flight Build','Hash: 3fa2c91 | Status: BLOCKED | Missing: IMU-REV-C validation')">
+        <div class="gnode-title">BUILD-v2.4.1-gnc</div><div class="gnode-sub">GNC Build ⚠ Blocked</div>
+      </div>
+      <div class="gnode gn-build" style="left:55%;top:62%" onclick="inspectNode('build','BUILD-v3.1.0-main','Main Flight Build','Hash: 8bc4e22 | Status: VALIDATED | All hardware paired ✓')">
+        <div class="gnode-title">BUILD-v3.1.0-main</div><div class="gnode-sub">Main Build ✓ Valid</div>
+      </div>
+      <div class="gnode gn-decision" style="left:22%;top:68%" onclick="inspectNode('decision','DEC-0112','Valve Spec Upgrade','Rationale: Field anomaly on ELK-036 — valve Rev C showed micro-fracture at 78% MEOP. Rev D mandated fleet-wide.')">
+        <div class="gnode-title">DEC-0112</div><div class="gnode-sub">Design Decision</div>
+      </div>
+      <div class="gnode gn-supplier" style="left:6%;top:78%" onclick="inspectNode('supplier','SUP-VORTEX','Vortex Precision NZ','Risk Score: 0.24 | On-time: 94% | Revision compliance: 89% | Alert: Rev mismatch')">
+        <div class="gnode-title">SUP-VORTEX</div><div class="gnode-sub">Supplier · Risk ⚠</div>
+      </div>
+      <div class="gnode gn-anomaly" style="left:72%;top:72%" onclick="inspectNode('anomaly','ANO-007','Valve Seat Wear','Status: OPEN | Severity: HIGH | Disposition: Pending engineering review | Organ: O1')">
+        <div class="gnode-title">ANO-007</div><div class="gnode-sub">Anomaly · OPEN</div>
+      </div>
+    </div>
+  </div>
+  <div style="font-size:11px;color:var(--text2);font-family:var(--mono);text-align:center;margin-bottom:20px">
+    Click any node to inspect in the right panel · Amber borders = flagged · Click AI Explain for full graph walkthrough
+  </div>
+</div>
+
+<!-- READINESS BOARD -->
+<div class="page" id="page-readiness">
+  <div class="sec-head">
+    <div><div class="sec-title">Launch Readiness Board</div><div class="sec-sub">Computed from graph state · Live · Last updated 4 mins ago</div></div>
+    <button class="btn btn-accent" onclick="askAI('Is ELK-001 on track to hold the April 16 launch window? What are the blockers?')">AI Go/No-Go</button>
+  </div>
+  <div class="readiness-grid">
+    <div class="readiness-organ">
+      <div class="ro-head"><div class="ro-name">O1 — Engineering</div><div class="ro-score" style="color:var(--gold)">82%</div></div>
+      <div class="ro-items">
+        <div class="ro-item"><span>Design changes closed</span><span class="rist-ok">✓ 34/34</span></div>
+        <div class="ro-item"><span>Open ECRs</span><span class="rist-warn">⚠ 1 pending</span></div>
+        <div class="ro-item"><span>Decision nodes documented</span><span class="rist-ok">✓ All</span></div>
+        <div class="ro-item"><span>Valve spec propagated</span><span class="rist-fail">✕ Downstream unflagged</span></div>
+      </div>
+    </div>
+    <div class="readiness-organ">
+      <div class="ro-head"><div class="ro-name">O2 — Flight Software</div><div class="ro-score" style="color:var(--green)">90%</div></div>
+      <div class="ro-items">
+        <div class="ro-item"><span>Main build validated</span><span class="rist-ok">✓ v3.1.0</span></div>
+        <div class="ro-item"><span>GNC build validated</span><span class="rist-warn">⚠ v2.4.1 blocked</span></div>
+        <div class="ro-item"><span>FTS build signed off</span><span class="rist-ok">✓ v1.8.2</span></div>
+        <div class="ro-item"><span>HW-SW pairs complete</span><span class="rist-warn">⚠ 1/4 pending</span></div>
+      </div>
+    </div>
+    <div class="readiness-organ">
+      <div class="ro-head"><div class="ro-name">O3 — Manufacturing</div><div class="ro-score" style="color:var(--green)">78%</div></div>
+      <div class="ro-items">
+        <div class="ro-item"><span>Build steps complete</span><span class="rist-ok">214/274</span></div>
+        <div class="ro-item"><span>Hold points cleared</span><span class="rist-ok">✓ 12/12</span></div>
+        <div class="ro-item"><span>Avionics bay</span><span class="rist-warn">⏳ In progress</span></div>
+        <div class="ro-item"><span>Valve inspection</span><span class="rist-fail">✕ Blocked on COMP-0441</span></div>
+      </div>
+    </div>
+    <div class="readiness-organ">
+      <div class="ro-head"><div class="ro-name">O4 — Supply Chain</div><div class="ro-score" style="color:var(--red)">61%</div></div>
+      <div class="ro-items">
+        <div class="ro-item"><span>Parts received & verified</span><span class="rist-ok">183/190</span></div>
+        <div class="ro-item"><span>Revision mismatches</span><span class="rist-fail">✕ 2 flagged</span></div>
+        <div class="ro-item"><span>Supplier risk scores</span><span class="rist-warn">⚠ SUP-VORTEX elevated</span></div>
+        <div class="ro-item"><span>Cert cross-validation</span><span class="rist-ok">✓ Clean</span></div>
+      </div>
+    </div>
+    <div class="readiness-organ">
+      <div class="ro-head"><div class="ro-name">O5 — Launch Ops</div><div class="ro-score" style="color:var(--gold)">75%</div></div>
+      <div class="ro-items">
+        <div class="ro-item"><span>Pad readiness</span><span class="rist-ok">✓ Pad A nominal</span></div>
+        <div class="ro-item"><span>Range safety package</span><span class="rist-warn">⚠ Pending O1 close</span></div>
+        <div class="ro-item"><span>L-24 review scheduled</span><span class="rist-ok">✓ 2026-04-15 08:00</span></div>
+        <div class="ro-item"><span>Critical path clear</span><span class="rist-warn">⚠ Valve blocker</span></div>
+      </div>
+    </div>
+    <div class="readiness-organ">
+      <div class="ro-head"><div class="ro-name">O6 — Compliance</div><div class="ro-score" style="color:var(--green)">95%</div></div>
+      <div class="ro-items">
+        <div class="ro-item"><span>ITAR nodes tagged</span><span class="rist-ok">✓ 100%</span></div>
+        <div class="ro-item"><span>Audit chain integrity</span><span class="rist-ok">✓ Verified</span></div>
+        <div class="ro-item"><span>Range safety docs</span><span class="rist-ok">✓ Filed</span></div>
+        <div class="ro-item"><span>Export control review</span><span class="rist-ok">✓ Cleared</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SUPPLY CHAIN -->
+<div class="page" id="page-supplychain">
+  <div class="sec-head">
+    <div><div class="sec-title">O4 — Supply Chain</div><div class="sec-sub">Part genealogy · Supplier portal · Cross-batch analysis</div></div>
+    <button class="btn" onclick="askAI('Run a supply chain risk analysis for ELK-001 — which suppliers have elevated risk scores and why?')">AI Risk Scan</button>
+  </div>
+  <table class="data-table">
+    <thead><tr><th>Part ID</th><th>Description</th><th>Supplier</th><th>Rev Required</th><th>Rev Received</th><th>Status</th><th>Cert Score</th></tr></thead>
+    <tbody>
+      <tr class="flagged" onclick="askAI('Tell me about the BR-4471-A bracket mismatch — is this a supplier issue or an ECR delay?')">
+        <td class="part-name">BR-4471-A</td><td>Structural Bracket Assy</td><td>Vortex Precision NZ</td>
+        <td class="rev-ok">D</td><td class="rev-warn">C ⚠</td><td class="rev-warn">MISMATCH</td><td class="rev-warn">0.72</td>
+      </tr>
+      <tr class="flagged" onclick="askAI('Tell me about the VALVE-0441-C mismatch and whether the replacement Rev D part has been ordered')">
+        <td class="part-name">VALVE-0441-C</td><td>Propellant Valve Assembly</td><td>Fluid Systems AU</td>
+        <td class="rev-ok">D</td><td class="rev-warn">C ⚠</td><td class="rev-warn">FLAGGED</td><td class="rev-ok">0.94</td>
+      </tr>
+      <tr onclick="askAI('What is the certification history for ALUM-2024-GR7 aluminium stock?')">
+        <td class="part-name">ALUM-2024-GR7</td><td>Aluminium Extrusion Stock</td><td>Pacific Metals NZ</td>
+        <td class="rev-ok">Rev 14</td><td class="rev-ok">Rev 14 ✓</td><td class="rev-ok">OK</td><td class="rev-ok">0.98</td>
+      </tr>
+      <tr onclick="askAI('Status of the carbon fibre fairing panels from Composite Dynamics?')">
+        <td class="part-name">CF-FAIR-001</td><td>Fairing Panel CF Layup</td><td>Composite Dynamics</td>
+        <td class="rev-ok">F</td><td class="rev-ok">F ✓</td><td class="rev-ok">OK</td><td class="rev-ok">0.97</td>
+      </tr>
+      <tr onclick="askAI('What is the avionics harness delivery status from Precision Wire?')">
+        <td class="part-name">HARN-AVI-338</td><td>Avionics Harness Bundle</td><td>Precision Wire SYD</td>
+        <td class="rev-ok">Rev 9</td><td class="rev-pend">In Transit ⏳</td><td class="rev-pend">PENDING</td><td class="rev-ok">0.91</td>
+      </tr>
+      <tr onclick="askAI('IMU delivery and validation status for ELK-001?')">
+        <td class="part-name">IMU-REV-C</td><td>Inertial Measurement Unit</td><td>Honeywell Aerospace</td>
+        <td class="rev-ok">Rev C</td><td class="rev-ok">Rev C ✓</td><td class="rev-warn">PENDING VALID</td><td class="rev-ok">0.99</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- FLIGHT SOFTWARE -->
+<div class="page" id="page-flightsw">
+  <div class="sec-head">
+    <div><div class="sec-title">O2 — Flight Software</div><div class="sec-sub">Build registry · VALIDATED_AGAINST constraint · Hardware pairing</div></div>
+    <button class="btn" onclick="askAI('Explain the VALIDATED_AGAINST constraint in Caelnex and why the GNC build v2.4.1 is blocked')">AI Explain</button>
+  </div>
+  <table class="build-table">
+    <thead><tr><th>Build ID</th><th>Module</th><th>Version</th><th>Hash</th><th>HW Config Match</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr onclick="askAI('Tell me the full history of the main flight build v3.1.0 for ELK-001')">
+        <td class="part-name" style="color:var(--text0)">BUILD-MAIN-001</td><td>Main Flight</td><td>v3.1.0</td>
+        <td class="hash-val">8bc4e227</td><td class="build-ok">✓ Full match</td><td class="build-ok">VALIDATED</td>
+      </tr>
+      <tr class="flagged" onclick="askAI('Why is the GNC build v2.4.1 blocked and what does it need to be cleared?')">
+        <td class="part-name" style="color:var(--text0)">BUILD-GNC-007</td><td>GNC</td><td>v2.4.1</td>
+        <td class="hash-val">3fa2c91b</td><td class="build-fail">✕ IMU-REV-C missing</td><td class="build-fail">BLOCKED</td>
+      </tr>
+      <tr onclick="askAI('Status of the flight termination system build v1.8.2?')">
+        <td class="part-name" style="color:var(--text0)">BUILD-FTS-003</td><td>Flight Termination</td><td>v1.8.2</td>
+        <td class="hash-val">cc29a441</td><td class="build-ok">✓ Full match</td><td class="build-ok">VALIDATED</td>
+      </tr>
+      <tr onclick="askAI('Status of telemetry build v4.0.3 and its hardware pairings?')">
+        <td class="part-name" style="color:var(--text0)">BUILD-TELEM-012</td><td>Telemetry</td><td>v4.0.3</td>
+        <td class="hash-val">f17b8ed3</td><td class="build-ok">✓ Full match</td><td class="build-ok">VALIDATED</td>
+      </tr>
+      <tr onclick="askAI('What does the range safety build cover and who signed it off?')">
+        <td class="part-name" style="color:var(--text0)">BUILD-RSAF-002</td><td>Range Safety</td><td>v2.2.0</td>
+        <td class="hash-val">a93c772f</td><td class="build-ok">✓ Full match</td><td class="build-ok">VALIDATED</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ANOMALIES -->
+<div class="page" id="page-anomalies">
+  <div class="sec-head">
+    <div><div class="sec-title">Anomaly Tracker</div><div class="sec-sub">3 open · 11 closed · All immutable · Organ 7 monitored</div></div>
+    <button class="btn" onclick="askAI('Analyse all 3 open anomalies on ELK-001 and tell me which one is most likely to impact the launch date')">AI Risk Rank</button>
+  </div>
+  <div class="anomaly-list">
+    <div class="anomaly open" onclick="askAI('Give me the full anomaly report for ANO-007 — what was observed, what was the prior decision this relates to, and what needs to happen?')">
+      <div class="an-head">
+        <div class="an-id">ANO-007</div>
+        <div class="an-title">Valve Seat Micro-Fracture — COMP-0441</div>
+        <div class="an-status as-open">OPEN · HIGH</div>
+      </div>
+      <div class="an-detail">Observed during integration inspection · Valve seat shows micro-fracture pattern at 78% MEOP · AI cross-referenced DEC-0112 from ELK-036 campaign · Likely Rev C manufacturing tolerance issue · Awaiting engineering disposition</div>
+    </div>
+    <div class="anomaly open" onclick="askAI('Tell me about ANO-011 — the structural bracket mismatch and what action Organ 7 has taken')">
+      <div class="an-head">
+        <div class="an-id">ANO-011</div>
+        <div class="an-title">Part Revision Mismatch at Receiving Dock</div>
+        <div class="an-status as-open">OPEN · MEDIUM</div>
+      </div>
+      <div class="an-detail">BR-4471-A received at Rev C · PO specifies Rev D · Organ 7 intercepted at receiving dock · Part quarantined · Supplier Vortex Precision NZ notified via portal · Re-supply ETA 4 days</div>
+    </div>
+    <div class="anomaly open" onclick="askAI('What is ANO-014 about and how does it connect to the GNC build block?')">
+      <div class="an-head">
+        <div class="an-id">ANO-014</div>
+        <div class="an-title">GNC Build Missing Validation Coverage</div>
+        <div class="an-status as-open">OPEN · MEDIUM</div>
+      </div>
+      <div class="an-detail">Build v2.4.1-gnc committed without VALIDATED_AGAINST edge to IMU-REV-C · Organ 7 blocked load attempt · Re-validation test scheduled L-14 days · GNC load on critical path</div>
+    </div>
+    <div class="anomaly closed" onclick="askAI('Tell me about the closed anomaly ANO-003 and what decision was made to close it')">
+      <div class="an-head">
+        <div class="an-id">ANO-003</div>
+        <div class="an-title">Oxidiser Valve Seal Material — Closed</div>
+        <div class="an-status as-closed">CLOSED</div>
+      </div>
+      <div class="an-detail">Resolved · DEC-0089 issued · Material substitution approved · Fleet-wide update applied · Decision node immutable in graph</div>
+    </div>
+  </div>
+</div>
+
+<!-- AUDIT LOG -->
+<div class="page" id="page-audit">
+  <div class="sec-head">
+    <div><div class="sec-title">Immutable Audit Log</div><div class="sec-sub">Append-only · pgcrypto chained · ITAR attributed · 2,847 entries</div></div>
+    <button class="btn" onclick="askAI('Generate a compliance audit summary for ELK-001 covering the last 7 days')">Export Summary</button>
+  </div>
+  <div class="audit-log">
+    <div class="audit-entry"><div class="ae-time">04:17:33</div><div class="ae-user">sys.organ7</div><div class="ae-action">INTERCEPTED — BR-4471-A Rev C submission rejected. Expected Rev D. ANO-011 created.</div><div class="ae-organ">O4·O7</div></div>
+    <div class="audit-entry"><div class="ae-time">04:12:08</div><div class="ae-user">j.chen@cael</div><div class="ae-action">BUILD-GNC-007 load attempt blocked. VALIDATED_AGAINST edge missing for IMU-REV-C. Waiver pending.</div><div class="ae-organ">O2·O7</div></div>
+    <div class="audit-entry"><div class="ae-time">03:58:44</div><div class="ae-user">m.harris@cael</div><div class="ae-action">DEC-0112 created. Valve spec Rev D mandated fleet-wide. Rationale: micro-fracture risk at 78% MEOP.</div><div class="ae-organ">O1</div></div>
+    <div class="audit-entry"><div class="ae-time">03:41:19</div><div class="ae-user">sys.organ1</div><div class="ae-action">PROPAGATED — SPEC-VALVE-D change flagged 4 downstream entities: BS-0338, BS-0339, PO-2241, CHK-0512.</div><div class="ae-organ">O1·O7</div></div>
+    <div class="audit-entry"><div class="ae-time">02:30:05</div><div class="ae-user">t.park@cael</div><div class="ae-action">BuildStepNode BS-0330 closed. Torque value 45.2 Nm accepted. Spec range: 44-47 Nm. ✓</div><div class="ae-organ">O3</div></div>
+    <div class="audit-entry"><div class="ae-time">01:55:22</div><div class="ae-user">t.park@cael</div><div class="ae-action">BuildStepNode BS-0329 closed. Engine mount torque sequence complete. 6/6 fasteners verified.</div><div class="ae-organ">O3</div></div>
+    <div class="audit-entry"><div class="ae-time">00:44:11</div><div class="ae-user">a.wilson@cael</div><div class="ae-action">ITAR access — COMP-0441 spec accessed. User: US Person ✓. Clearance: ITAR-L3 ✓. Logged.</div><div class="ae-organ">O6</div></div>
+    <div class="audit-entry"><div class="ae-time">00:12:38</div><div class="ae-user">sys.organ4</div><div class="ae-action">Supplier portal updated. Vortex Precision NZ notified: BR-4471-A Rev D now required. ANO-011 linked.</div><div class="ae-organ">O4</div></div>
+  </div>
+</div>
+
+<!-- ENGINEERING -->
+<div class="page" id="page-engineering">
+  <div class="sec-head">
+    <div><div class="sec-title">O1 — Engineering</div><div class="sec-sub">Change propagation · Decision nodes · PLM integration</div></div>
+    <button class="btn" onclick="askAI('What engineering changes have been made in the last 48 hours on ELK-001 and what downstream impacts have been propagated?')">AI Impact Report</button>
+  </div>
+  <div class="checklist">
+    <div class="check-item fail" onclick="askAI('What is the current status of the COMP-0441 valve spec change and which downstream items are still unflagged?')">
+      <div class="check-icon ci-fail">✕</div>
+      <div class="check-body"><div class="check-title">COMP-0441 — Valve Rev D Propagation Incomplete</div><div class="check-detail">Change committed 2h ago · 4 downstream entities · 3 cleared · 1 open: BS-0341 valve inspection step</div></div>
+      <div class="check-organ">O1 → O3</div>
+    </div>
+    <div class="check-item ok" onclick="askAI('Tell me about the engine mount spec update and what decision node was created')">
+      <div class="check-icon ci-ok">✓</div>
+      <div class="check-body"><div class="check-title">COMP-0238 — Engine Mount Torque Spec Update</div><div class="check-detail">DEC-0109 created · Rationale documented · 3 build steps re-validated · All clear</div></div>
+      <div class="check-organ">O1 ✓</div>
+    </div>
+    <div class="check-item ok" onclick="askAI('What was in the avionics harness material substitution decision?')">
+      <div class="check-icon ci-ok">✓</div>
+      <div class="check-body"><div class="check-title">HARN-AVI-338 — Material Substitution Approved</div><div class="check-detail">DEC-0110 created · Approved by lead engineer · Downstream flagging complete</div></div>
+      <div class="check-organ">O1 ✓</div>
+    </div>
+  </div>
+</div>
+
+<!-- MANUFACTURING -->
+<div class="page" id="page-manufacturing">
+  <div class="sec-head">
+    <div><div class="sec-title">O3 — Manufacturing</div><div class="sec-sub">Digital traveller · Build steps · Technician logging</div></div>
+    <button class="btn" onclick="askAI('What manufacturing steps are currently blocked or in progress on ELK-001 and what is blocking them?')">AI Status</button>
+  </div>
+  <div class="checklist">
+    <div class="check-item fail" onclick="askAI('Why is build step BS-0341 blocked and what needs to happen to unblock it?')">
+      <div class="check-icon ci-fail">✕</div>
+      <div class="check-body"><div class="check-title">BS-0341 — Valve Inspection Gate</div><div class="check-detail">BLOCKED — depends on ANO-007 disposition · Valve Rev C installed · Pending engineering sign-off</div></div>
+      <div class="check-organ">O3 blocked</div>
+    </div>
+    <div class="check-item warn" onclick="askAI('What is the current status of the avionics bay integration on ELK-001?')">
+      <div class="check-icon ci-warn">!</div>
+      <div class="check-body"><div class="check-title">BS-0338/39 — Avionics Bay Integration</div><div class="check-detail">In progress · Technician T.Park · 2 of 7 substeps complete · ETA 3 days</div></div>
+      <div class="check-organ">O3 active</div>
+    </div>
+    <div class="check-item ok" onclick="askAI('Tell me about the engine mount installation completion on ELK-001')">
+      <div class="check-icon ci-ok">✓</div>
+      <div class="check-body"><div class="check-title">BS-0329/30 — Engine Mount Installation</div><div class="check-detail">Complete · All 6 fasteners torqued 45.2 Nm ✓ · Quality gate cleared · T.Park signed off</div></div>
+      <div class="check-organ">O3 ✓</div>
+    </div>
+  </div>
+</div>
+
+<!-- LAUNCH OPS -->
+<div class="page" id="page-launchops">
+  <div class="sec-head">
+    <div><div class="sec-title">O5 — Launch Operations</div><div class="sec-sub">Live readiness · TAT engine · Go/No-Go management</div></div>
+    <button class="btn btn-accent" onclick="askAI('Simulate the L-24 go/no-go poll for ELK-001 based on current graph state — what would each organ lead say?')">Simulate L-24</button>
+  </div>
+  <div class="checklist">
+    <div class="check-item ok"><div class="check-icon ci-ok">✓</div><div class="check-body"><div class="check-title">Pad A — Mahia Peninsula</div><div class="check-detail">Nominal · All systems checked · Range safety coordination active</div></div><div class="check-organ">PAD</div></div>
+    <div class="check-item warn" onclick="askAI('What is the range safety package status and what is it waiting on from Organ 1?')"><div class="check-icon ci-warn">!</div><div class="check-body"><div class="check-title">Range Safety Package</div><div class="check-detail">Pending O1 valve ECR close · 98% complete · Expected ready L-12d</div></div><div class="check-organ">O5 → O1</div></div>
+    <div class="check-item ok"><div class="check-icon ci-ok">✓</div><div class="check-body"><div class="check-title">L-24 Review Scheduled</div><div class="check-detail">2026-04-15 08:00 NZST · All organ leads confirmed</div></div><div class="check-organ">O5</div></div>
+    <div class="check-item warn" onclick="askAI('How does the valve block affect the launch TAT and is the April 16 date still holdable?')"><div class="check-icon ci-warn">!</div><div class="check-body"><div class="check-title">TAT Engine — Valve Blocker Impact</div><div class="check-detail">Critical path delayed 2d · April 16 window still holdable if ANO-007 closed by L-14d</div></div><div class="check-organ">O5 TAT</div></div>
+  </div>
+</div>
+
+<!-- COMPLIANCE -->
+<div class="page" id="page-compliance">
+  <div class="sec-head">
+    <div><div class="sec-title">O6 — Compliance & Safety</div><div class="sec-sub">ITAR · CMMC · Audit chain · Range safety</div></div>
+    <button class="btn" onclick="askAI('Generate a compliance summary for ELK-001 suitable for a CMMC Level 2 audit')">Generate Audit Package</button>
+  </div>
+  <div class="checklist">
+    <div class="check-item ok"><div class="check-icon ci-ok">✓</div><div class="check-body"><div class="check-title">ITAR — All nodes tagged at creation</div><div class="check-detail">100% classification coverage · 0 untagged nodes · Access log clean</div></div><div class="check-organ">O6</div></div>
+    <div class="check-item ok"><div class="check-icon ci-ok">✓</div><div class="check-body"><div class="check-title">Cryptographic Audit Chain — Intact</div><div class="check-detail">2,847 events · Chain verified · No gaps · pgcrypto hash match</div></div><div class="check-organ">O6</div></div>
+    <div class="check-item ok"><div class="check-icon ci-ok">✓</div><div class="check-body"><div class="check-title">Range Safety Documentation</div><div class="check-detail">Filed with RSAF · Current revision · Pending O1 ECR close for final package</div></div><div class="check-organ">O6</div></div>
+    <div class="check-item ok"><div class="check-icon ci-ok">✓</div><div class="check-body"><div class="check-title">Export Control Cleared</div><div class="check-detail">All personnel verified · Foreign national access logged · ITAR-L3 clearances current</div></div><div class="check-organ">O6</div></div>
+  </div>
+</div>
+
+<!-- CIE -->
+<div class="page" id="page-cie">
+  <div class="sec-head">
+    <div><div class="sec-title">O7 — Compliance Index Engine</div><div class="sec-sub">Pre-submission validation · Activity zone monitor · Cross-organ re-indexing</div></div>
+    <button class="btn btn-accent" onclick="askAI('Explain how the Caelnex Compliance Index Engine works — Poka-Yoke at organisational scale, pre-submission interception, and cross-organ re-indexing')">AI Deep Dive</button>
+  </div>
+  <div class="checklist">
+    <div class="check-item fail" onclick="askAI('Tell me exactly what Organ 7 intercepted when the BR-4471-A part arrived — what was the expected state, what was submitted, and what happened next?')">
+      <div class="check-icon ci-fail">✕</div>
+      <div class="check-body"><div class="check-title">INTERCEPTED — BR-4471-A Rev C at Receiving Dock</div><div class="check-detail">Expected: Rev D per graph state · Received: Rev C · Submission blocked · ANO-011 auto-created · Supplier portal updated · Tech notified in real time</div></div>
+      <div class="check-organ">O4 → O7</div>
+    </div>
+    <div class="check-item fail" onclick="askAI('Tell me how Organ 7 blocked the GNC build load attempt and what the waiver process looks like')">
+      <div class="check-icon ci-fail">✕</div>
+      <div class="check-body"><div class="check-title">BLOCKED — BUILD-GNC-007 Load Without Full HW Validation</div><div class="check-detail">VALIDATED_AGAINST edge missing for IMU-REV-C · Load physically blocked · Named authorising officer required for waiver · Waiver node will be permanent in graph</div></div>
+      <div class="check-organ">O2 → O7</div>
+    </div>
+    <div class="check-item warn" onclick="askAI('What is the activity zone gap that Organ 7 has detected in the integration bay today?')">
+      <div class="check-icon ci-warn">!</div>
+      <div class="check-body"><div class="check-title">ZONE GAP — Integration Bay: Expected Step BS-0341 Not Logged</div><div class="check-detail">Expected valve inspection at 02:00 · No log entry · Gap visualisation generated · Technician notified · Still within acceptable window</div></div>
+      <div class="check-organ">O3 → O7</div>
+    </div>
+    <div class="check-item ok">
+      <div class="check-icon ci-ok">✓</div>
+      <div class="check-body"><div class="check-title">Cross-Organ Re-Index Complete — SPEC-VALVE-D Change</div><div class="check-detail">DEC-0112 triggered full re-index · 4 active input sessions validated against new graph state · 3 cleared · 1 intercepted (BS-0341)</div></div>
+      <div class="check-organ">O1 → O7 → All</div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /main -->
+
+<!-- RIGHT PANEL -->
+<div class="rpanel">
+  <div class="rpanel-header">
+    <span>CAELNEX AI — Graph Intelligence</span>
+    <span class="rstatus" id="ai-status">READY</span>
+  </div>
+
+  <div class="chat-wrap" id="chatWrap">
+    <div class="chat-msg msg-system">
+      <div class="msg-label">SYSTEM</div>
+      Caelnex AI is live. I have full context of ELK-001 — all 7 organs, the configuration graph, anomalies, and audit trail. Ask me anything or click any node/flag in the dashboard.
+    </div>
+    <div class="chat-msg msg-system">
+      <div class="msg-label">GRAPH STATE</div>
+      312 nodes · 847 edges · 3 open flags · 78% readiness · L-18 days
+    </div>
+  </div>
+
+  <div class="chat-input-wrap">
+    <div class="chat-suggestions">
+      <div class="suggestion" onclick="askAI('Will ELK-001 make the April 16 launch window?')">Launch window?</div>
+      <div class="suggestion" onclick="askAI('What is the critical path blocker right now?')">Critical blocker?</div>
+      <div class="suggestion" onclick="askAI('Explain the VALIDATED_AGAINST constraint and why it matters')">VALIDATED_AGAINST?</div>
+      <div class="suggestion" onclick="askAI('Compare Caelnex to how a traditional aerospace company would manage this')">vs. traditional ops?</div>
+      <div class="suggestion" onclick="askAI('What would have happened without Organ 7 on ELK-001?')">Without O7?</div>
+      <div class="suggestion" onclick="askAI('How does the supply chain fraud detection work in Organ 4?')">Fraud detection?</div>
+    </div>
+    <div class="chat-row">
+      <textarea class="chat-input" id="chatInput" placeholder="Ask about any node, organ, or flag..." rows="2"></textarea>
+      <button class="send-btn" id="sendBtn" onclick="sendChat()">ASK</button>
+    </div>
+  </div>
+</div>
+
+</div><!-- /shell -->
+
+<script>
+// ─── PAGE NAV ───
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const pg = document.getElementById('page-' + id);
+  if (pg) { pg.classList.add('active'); pg.classList.add('fadein'); }
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if (n.getAttribute('onclick') && n.getAttribute('onclick').includes("'" + id + "'")) n.classList.add('active');
+  });
+}
+
+// ─── COUNTDOWN ───
+function updateCountdown() {
+  const launch = new Date('2026-04-16T14:30:00+12:00');
+  const now = new Date();
+  const diff = launch - now;
+  if (diff <= 0) return;
+  const d = Math.floor(diff / 86400000);
+  const h = Math.floor((diff % 86400000) / 3600000);
+  const m = Math.floor((diff % 3600000) / 60000);
+  const s = Math.floor((diff % 60000) / 1000);
+  document.getElementById('cd-d').textContent = String(d).padStart(2,'0');
+  document.getElementById('cd-h').textContent = String(h).padStart(2,'0');
+  document.getElementById('cd-m').textContent = String(m).padStart(2,'0');
+  document.getElementById('cd-s').textContent = String(s).padStart(2,'0');
+  document.getElementById('countdown-inline').textContent = d + 'd ' + String(h).padStart(2,'0') + 'h ' + String(m).padStart(2,'0') + 'm';
+}
+setInterval(updateCountdown, 1000);
+updateCountdown();
+
+// ─── GRAPH SVG EDGES ───
+function drawEdges() {
+  const canvas = document.getElementById('graphCanvas');
+  const svg = document.getElementById('graphSvg');
+  const nodes = canvas.querySelectorAll('.gnode');
+  const rect = canvas.getBoundingClientRect();
+
+  const edges = [
+    [0,1],[0,2],[0,3],[1,4],[1,5],[2,5],[3,4],[3,6],[4,7],[5,9],[6,8],[7,8]
+  ];
+
+  const nodeArr = Array.from(nodes);
+  let svgContent = '<defs><marker id="earrow" viewBox="0 0 6 6" refX="5" refY="3" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L6 3L0 6" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="1"/></marker></defs>';
+
+  edges.forEach(([a, b]) => {
+    if (!nodeArr[a] || !nodeArr[b]) return;
+    const ra = nodeArr[a].getBoundingClientRect();
+    const rb = nodeArr[b].getBoundingClientRect();
+    const x1 = ra.left - rect.left + ra.width / 2;
+    const y1 = ra.top - rect.top + ra.height / 2;
+    const x2 = rb.left - rect.left + rb.width / 2;
+    const y2 = rb.top - rect.top + rb.height / 2;
+    const flagged = nodeArr[a].classList.contains('gn-anomaly') || nodeArr[b].classList.contains('gn-anomaly') ||
+      (nodeArr[a].querySelector('.gnode-sub') && nodeArr[a].querySelector('.gnode-sub').textContent.includes('⚠')) ||
+      (nodeArr[b].querySelector('.gnode-sub') && nodeArr[b].querySelector('.gnode-sub').textContent.includes('⚠'));
+    const color = flagged ? 'rgba(201,107,66,0.35)' : 'rgba(255,255,255,0.1)';
+    svgContent += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${color}" stroke-width="1" marker-end="url(#earrow)"/>`;
+  });
+
+  svg.innerHTML = svgContent;
+}
+setTimeout(drawEdges, 200);
+window.addEventListener('resize', drawEdges);
+
+// ─── NODE INSPECTOR ───
+function inspectNode(type, id, name, details) {
+  const chat = document.getElementById('chatWrap');
+  const typeColors = {component:'var(--accent)',spec:'var(--blue)',build:'var(--teal)',decision:'var(--gold)',supplier:'var(--green)',anomaly:'var(--red)',campaign:'#B07FE8'};
+  const msg = document.createElement('div');
+  msg.className = 'chat-msg msg-system fadein';
+  msg.innerHTML = `<div class="msg-label" style="color:${typeColors[type]||'var(--teal)'}">${type.toUpperCase()} NODE</div>
+<div style="margin-bottom:4px;font-weight:600;color:var(--text0)">${id}</div>
+<div style="color:var(--text1);margin-bottom:6px">${name}</div>
+<div style="color:var(--text2);font-size:10px;line-height:1.6">${details}</div>
+<div style="margin-top:8px;display:flex;gap:4px;flex-wrap:wrap">
+<span class="edge-chip" onclick="askAI('Tell me everything about node ${id} — its properties, all its edges, and its current status in the ELK-001 campaign graph')">Inspect edges →</span>
+<span class="edge-chip" onclick="askAI('What is the full history of ${id}?')">History →</span>
+</div>`;
+  chat.appendChild(msg);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+// ─── AI CHAT ───
+const SYSTEM_PROMPT = `You are the Caelnex AI — the embedded intelligence layer of the Caelnex Mission Continuity Platform, a graph-native aerospace configuration management system.
+
+You have full context of vehicle ELK-001 (Electron "Still Testing", Vehicle #38) currently in launch campaign for a 2026-04-16 launch window at Mahia Peninsula.
+
+LIVE GRAPH STATE:
+- 312 nodes, 847 edges in the Neo4j configuration graph
+- Launch readiness: 78% (computed from graph state)
+- L-18 days to launch window
+- 3 open anomalies: ANO-007 (valve seat micro-fracture, HIGH), ANO-011 (part revision mismatch BR-4471-A, MEDIUM), ANO-014 (GNC build validation gap, MEDIUM)
+- 3 active Organ 7 intercepts
+
+ORGAN STATUS:
+- O1 Engineering: 82% — 1 open ECR (COMP-0441 valve Rev D propagation incomplete)
+- O2 Flight Software: 90% — GNC build v2.4.1 BLOCKED (missing VALIDATED_AGAINST edge for IMU-REV-C)
+- O3 Manufacturing: 78% — 214/274 build steps complete. BS-0341 valve inspection BLOCKED
+- O4 Supply Chain: 61% — BR-4471-A received at Rev C, PO requires Rev D. Supplier Vortex Precision NZ risk score elevated
+- O5 Launch Ops: 75% — Range safety package 98% complete, pending O1 ECR close. L-24 review 2026-04-15
+- O6 Compliance: 95% — ITAR 100% tagged, audit chain verified, 2,847 events
+- O7 CIE (Compliance Index Engine): ACTIVE — 3 active intercepts. Pre-submission validation blocking non-compliant inputs
+
+KEY NODES:
+- COMP-0441: Valve Assembly. Rev C installed, Rev D required. Flagged by O1 change propagation. ANO-007 linked.
+- BR-4471-A: Structural Bracket. Rev C received at dock. O7 intercepted and quarantined.
+- BUILD-v2.4.1-gnc: GNC flight build. Missing VALIDATED_AGAINST edge for IMU-REV-C. Load blocked.
+- DEC-0112: Design decision node. Valve Rev D mandated fleet-wide after micro-fracture on ELK-036.
+- SUP-VORTEX: Supplier Vortex Precision NZ. Risk score 0.24. Revision compliance 89%.
+
+CAELNEX ARCHITECTURE:
+- Graph database: Neo4j (nodes + edges, directed property graph)
+- Audit store: PostgreSQL append-only with pgcrypto cryptographic chaining
+- API: GraphQL via Apollo Server
+- Frontend: React + TypeScript + React Flow
+- Auth: Keycloak with ITAR citizenship attributes
+- Offline sync: Yjs CRDT
+- AI layer: Claude API (you)
+
+YOUR ROLE: Answer questions about the campaign, explain graph concepts, provide risk analysis, simulate go/no-go decisions, and help the user understand the Caelnex architecture. Be specific, cite node IDs, organ numbers, and graph state. Keep responses focused and technically precise. You are speaking to a young software engineer who is the technical lead on this project.`;
+
+async function askAI(prompt) {
+  const chatWrap = document.getElementById('chatWrap');
+  const statusEl = document.getElementById('ai-status');
+
+  // User message
+  const userMsg = document.createElement('div');
+  userMsg.className = 'chat-msg msg-user fadein';
+  userMsg.innerHTML = `<div class="msg-label">YOU</div>${prompt}`;
+  chatWrap.appendChild(userMsg);
+
+  // Thinking indicator
+  const thinkMsg = document.createElement('div');
+  thinkMsg.className = 'chat-msg msg-ai fadein';
+  thinkMsg.innerHTML = `<div class="msg-label">CAELNEX AI</div><div class="thinking"><span></span><span></span><span></span></div>`;
+  chatWrap.appendChild(thinkMsg);
+  chatWrap.scrollTop = chatWrap.scrollHeight;
+
+  statusEl.textContent = 'THINKING...';
+  statusEl.style.color = 'var(--gold)';
+
+  document.getElementById('sendBtn').disabled = true;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: SYSTEM_PROMPT,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    const data = await response.json();
+    const text = data.content?.[0]?.text || 'No response received.';
+
+    thinkMsg.innerHTML = `<div class="msg-label">CAELNEX AI</div>${text.replace(/\n/g,'<br>')}`;
+
+  } catch (err) {
+    thinkMsg.innerHTML = `<div class="msg-label">CAELNEX AI</div><span style="color:var(--red)">AI connection failed. Check API key configuration. Error: ${err.message}</span>`;
+  }
+
+  statusEl.textContent = 'READY';
+  statusEl.style.color = 'var(--teal)';
+  document.getElementById('sendBtn').disabled = false;
+  chatWrap.scrollTop = chatWrap.scrollHeight;
+}
+
+function sendChat() {
+  const input = document.getElementById('chatInput');
+  const val = input.value.trim();
+  if (!val) return;
+  input.value = '';
+  askAI(val);
+}
+
+document.getElementById('chatInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
+});
+</script>
+</body>
+</html>
