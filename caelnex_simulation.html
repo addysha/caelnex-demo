@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CAELNEX — Failure Simulation: Taurus XL / OCO & Glory</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg0:#060a0e;--bg1:#0c1219;--bg2:#111b26;--bg3:#162233;
+  --border:#1a2d40;--border2:#203650;
+  --t0:#e8edf2;--t1:#7a90a8;--t2:#3a5068;
+  --green:#00e676;--gdim:#0a2e1a;
+  --amber:#ffab00;--adim:#2e2000;
+  --red:#ff3d3d;--rdim:#2e0a0a;
+  --blue:#40a9ff;--bdim:#0a1e35;
+  --purple:#b07fff;--pdim:#1a0a35;
+  --cyan:#00e5ff;--cdim:#002e35;
+  --mono:'IBM Plex Mono',monospace;
+  --sans:'IBM Plex Sans',sans-serif;
+}
+html,body{height:100%;background:var(--bg0);color:var(--t0);font-family:var(--mono);overflow-x:hidden}
+
+/* ── HEADER ── */
+.hdr{background:var(--bg1);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;gap:16px;position:sticky;top:0;z-index:50}
+.hdr-brand{font-size:14px;font-weight:600;letter-spacing:.1em;color:var(--cyan)}
+.hdr-case{font-size:10px;color:var(--t1);letter-spacing:.06em;padding-left:16px;border-left:1px solid var(--border)}
+.hdr-loss{font-size:11px;font-weight:600;color:var(--red);margin-left:auto;letter-spacing:.06em}
+.hdr-status{font-size:10px;color:var(--t2);margin-left:16px}
+
+/* ── LAYOUT ── */
+.shell{display:grid;grid-template-columns:300px 1fr 280px;height:calc(100vh - 44px)}
+.left-panel{background:var(--bg1);border-right:1px solid var(--border);overflow-y:auto;display:flex;flex-direction:column}
+.centre{overflow-y:auto;padding:16px}
+.right-panel{background:var(--bg1);border-left:1px solid var(--border);overflow-y:auto}
+
+/* ── TIMELINE ── */
+.timeline{padding:12px}
+.tl-title{font-size:9px;letter-spacing:.18em;color:var(--t2);text-transform:uppercase;padding:8px 0 8px;border-bottom:1px solid var(--border);margin-bottom:8px}
+.tl-step{padding:8px 10px;border-radius:3px;cursor:pointer;border-left:3px solid transparent;margin-bottom:4px;transition:all .2s;position:relative}
+.tl-step:hover{background:var(--bg2)}
+.tl-step.active{background:var(--bg3);border-left-color:var(--cyan)}
+.tl-step.done{border-left-color:var(--green);opacity:.7}
+.tl-step.flagged{border-left-color:var(--red);background:rgba(255,61,61,.05)}
+.tl-year{font-size:9px;color:var(--t2);letter-spacing:.06em;margin-bottom:3px}
+.tl-event{font-size:11px;color:var(--t0);line-height:1.4}
+.tl-sub{font-size:10px;color:var(--t1);margin-top:3px;line-height:1.4}
+.tl-badge{display:inline-block;font-size:8px;padding:1px 6px;border-radius:2px;margin-top:4px;letter-spacing:.06em;font-weight:600}
+.badge-red{background:var(--rdim);color:var(--red);border:1px solid rgba(255,61,61,.3)}
+.badge-amber{background:var(--adim);color:var(--amber);border:1px solid rgba(255,171,0,.3)}
+.badge-green{background:var(--gdim);color:var(--green);border:1px solid rgba(0,230,118,.3)}
+.badge-blue{background:var(--bdim);color:var(--blue);border:1px solid rgba(64,169,255,.3)}
+
+/* ── CENTRE CONTENT ── */
+.step-header{margin-bottom:14px}
+.step-num{font-size:9px;color:var(--t2);letter-spacing:.14em;text-transform:uppercase;margin-bottom:4px}
+.step-title{font-size:18px;font-weight:600;color:var(--t0);margin-bottom:6px;line-height:1.3}
+.step-desc{font-size:12px;color:var(--t1);line-height:1.7;margin-bottom:14px;max-width:640px}
+
+/* ── GRAPH ── */
+.graph-wrap{background:var(--bg1);border:1px solid var(--border);border-radius:3px;margin-bottom:14px;overflow:hidden}
+.graph-bar{background:var(--bg2);padding:7px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;font-size:10px;color:var(--t1)}
+.graph-bar strong{color:var(--t0)}
+.graph-svg-wrap{padding:8px;overflow:hidden}
+svg.gsvg{width:100%;display:block}
+
+/* node states */
+.gn-idle rect,.gn-idle circle{fill:var(--bg2);stroke:var(--border2);stroke-width:1}
+.gn-idle text{fill:var(--t2)}
+.gn-ok rect,.gn-ok circle{fill:var(--gdim);stroke:var(--green);stroke-width:1}
+.gn-ok text{fill:var(--green)}
+.gn-flag rect,.gn-flag circle{fill:var(--adim);stroke:var(--amber);stroke-width:1.5}
+.gn-flag text{fill:var(--amber)}
+.gn-critical rect,.gn-critical circle{fill:var(--rdim);stroke:var(--red);stroke-width:2}
+.gn-critical text{fill:var(--red)}
+.gn-intercept rect,.gn-intercept circle{fill:var(--cdim);stroke:var(--cyan);stroke-width:2;animation:glow-pulse 1s ease-in-out infinite}
+.gn-intercept text{fill:var(--cyan)}
+.gn-blocked rect,.gn-blocked circle{fill:#1a1a00;stroke:var(--amber);stroke-width:2;stroke-dasharray:4 2}
+.gn-blocked text{fill:var(--amber)}
+@keyframes glow-pulse{0%,100%{stroke-opacity:1}50%{stroke-opacity:.4}}
+
+.gedge{fill:none;stroke:var(--border2);stroke-width:1;marker-end:url(#arr)}
+.gedge-ok{fill:none;stroke:var(--green);stroke-width:1.5;marker-end:url(#arr-g)}
+.gedge-flag{fill:none;stroke:var(--amber);stroke-width:1.5;stroke-dasharray:5 3;animation:dash .8s linear infinite;marker-end:url(#arr-a)}
+.gedge-critical{fill:none;stroke:var(--red);stroke-width:2;stroke-dasharray:4 2;animation:dash .5s linear infinite;marker-end:url(#arr-r)}
+@keyframes dash{to{stroke-dashoffset:-12}}
+
+/* ── CAELNEX INTERVENTION BOX ── */
+.intervention{border-radius:3px;padding:14px 16px;margin-bottom:14px;border-left:3px solid}
+.intervention.intercept{background:rgba(0,229,255,.07);border-color:var(--cyan)}
+.intervention.flag{background:rgba(255,171,0,.07);border-color:var(--amber)}
+.intervention.blocked{background:rgba(255,61,61,.07);border-color:var(--red)}
+.intervention.prevented{background:rgba(0,230,118,.07);border-color:var(--green)}
+.int-label{font-size:9px;letter-spacing:.16em;text-transform:uppercase;margin-bottom:6px;font-weight:600}
+.int-label.intercept{color:var(--cyan)}
+.int-label.flag{color:var(--amber)}
+.int-label.blocked{color:var(--red)}
+.int-label.prevented{color:var(--green)}
+.int-body{font-size:11px;color:var(--t1);line-height:1.7}
+.int-body strong{color:var(--t0)}
+
+/* ── WHAT-IF COMPARISON ── */
+.comparison{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.comp-card{border-radius:3px;padding:12px;border:1px solid}
+.comp-card.without{border-color:var(--red);background:var(--rdim)}
+.comp-card.with{border-color:var(--green);background:var(--gdim)}
+.comp-title{font-size:9px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;margin-bottom:8px}
+.comp-card.without .comp-title{color:var(--red)}
+.comp-card.with .comp-title{color:var(--green)}
+.comp-item{font-size:10px;color:var(--t1);padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04);line-height:1.5}
+.comp-item:last-child{border:none}
+
+/* ── CONTROLS ── */
+.controls{display:flex;gap:8px;margin-bottom:14px;align-items:center}
+.btn{font-family:var(--mono);font-size:10px;padding:6px 14px;border:1px solid var(--border2);background:var(--bg2);color:var(--t1);cursor:pointer;letter-spacing:.06em;border-radius:2px;transition:all .15s}
+.btn:hover{border-color:var(--cyan);color:var(--cyan)}
+.btn.primary{border-color:var(--cyan);color:var(--cyan);background:var(--cdim)}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.progress-wrap{flex:1;height:4px;background:var(--bg3);border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;background:var(--cyan);border-radius:2px;transition:width .4s ease}
+
+/* ── RIGHT PANEL ── */
+.rp-sec{border-bottom:1px solid var(--border);padding:12px 14px}
+.rp-title{font-size:9px;letter-spacing:.16em;color:var(--t2);text-transform:uppercase;margin-bottom:10px}
+.fact-item{font-size:10px;color:var(--t1);padding:5px 0;border-bottom:1px solid var(--border);line-height:1.5}
+.fact-item:last-child{border:none}
+.fact-item strong{color:var(--t0);display:block;margin-bottom:2px}
+.node-legend{display:flex;flex-direction:column;gap:6px}
+.leg-item{display:flex;align-items:center;gap:8px;font-size:10px;color:var(--t1)}
+.leg-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:var(--bg1)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-brand">CAELNEX</div>
+  <div class="hdr-case">SIMULATION  ·  NASA Taurus XL / OCO &amp; Glory  ·  Real documented failure  ·  1998–2011</div>
+  <div class="hdr-loss">$700M+ LOST — PREVENTABLE</div>
+  <div class="hdr-status" id="sim-status">Step 1 of 7</div>
+</div>
+
+<div class="shell">
+
+  <!-- LEFT: TIMELINE -->
+  <div class="left-panel">
+    <div class="timeline">
+      <div class="tl-title">Failure timeline — actual events</div>
+
+      <div class="tl-step active" id="tl-1" onclick="goTo(1)">
+        <div class="tl-year">1998</div>
+        <div class="tl-event">Sapa Profiles Inc. (SPI) awarded aluminium supply contract</div>
+        <div class="tl-sub">Orbital Sciences / NASA supply chain established for Taurus XL fairing rail frangible joints</div>
+        <span class="tl-badge badge-blue">SUPPLY CHAIN</span>
+      </div>
+
+      <div class="tl-step" id="tl-2" onclick="goTo(2)">
+        <div class="tl-year">1998–2008</div>
+        <div class="tl-event">SPI falsifies tensile test certificates — 19-year scheme</div>
+        <div class="tl-sub">Employees doctor failing numbers, alter test speeds, use incorrect sample sizes. Thousands of falsified certs issued to hundreds of customers.</div>
+        <span class="tl-badge badge-red">FRAUD — UNDETECTED</span>
+      </div>
+
+      <div class="tl-step" id="tl-3" onclick="goTo(3)">
+        <div class="tl-year">Feb 2009</div>
+        <div class="tl-event">OCO Mission — Taurus XL launch failure</div>
+        <div class="tl-sub">Payload fairing fails to separate. $273M satellite plunges into Pacific Ocean near Antarctica.</div>
+        <span class="tl-badge badge-red">MISSION LOST</span>
+      </div>
+
+      <div class="tl-step" id="tl-4" onclick="goTo(4)">
+        <div class="tl-year">2009–2011</div>
+        <div class="tl-event">Investigation inconclusive — same supplier still active</div>
+        <div class="tl-sub">Frangible joint identified as probable cause but no root cause confirmed. SPI continues supplying. Talent scarcity in materials testing means forensic re-test is delayed.</div>
+        <span class="tl-badge badge-amber">TALENT SCARCITY FACTOR</span>
+      </div>
+
+      <div class="tl-step" id="tl-5" onclick="goTo(5)">
+        <div class="tl-year">March 2011</div>
+        <div class="tl-event">Glory Mission — second Taurus XL failure</div>
+        <div class="tl-sub">Identical failure mode. Same fairing. Same supplier. $424M satellite lost. Total loss now $697M+.</div>
+        <span class="tl-badge badge-red">SECOND MISSION LOST</span>
+      </div>
+
+      <div class="tl-step" id="tl-6" onclick="goTo(6)">
+        <div class="tl-year">2012–2019</div>
+        <div class="tl-event">Multi-year investigation — root cause finally confirmed</div>
+        <div class="tl-sub">NASA OIG and DOJ investigation. SPI pleads guilty. $46M settlement. Debarred from federal contracting. Root cause: sub-spec aluminium in frangible joint extrusions.</div>
+        <span class="tl-badge badge-amber">10 YEARS AFTER FIRST FAILURE</span>
+      </div>
+
+      <div class="tl-step" id="tl-7" onclick="goTo(7)">
+        <div class="tl-year">Caelnex counterfactual</div>
+        <div class="tl-event">How Caelnex would have intercepted this</div>
+        <div class="tl-sub">Graph-native certification genealogy, cross-batch material traceability, and Organ 7 pre-submission validation would have surfaced the anomaly before OCO launch.</div>
+        <span class="tl-badge badge-green">PREVENTED</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- CENTRE -->
+  <div class="centre" id="centre">
+    <!-- populated by JS -->
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="right-panel">
+    <div class="rp-sec">
+      <div class="rp-title">Case facts</div>
+      <div class="fact-item"><strong>Root cause</strong>Aluminium extrusions in payload fairing frangible joints failed to meet tensile spec — certificates falsified by SPI for 19 years</div>
+      <div class="fact-item"><strong>Failure mode</strong>Payload fairing failed to separate on command in both OCO (2009) and Glory (2011) missions</div>
+      <div class="fact-item"><strong>Financial loss</strong>$273M (OCO) + $424M (Glory) = $697M+ plus programme delays and investigation costs</div>
+      <div class="fact-item"><strong>Supply chain factor</strong>NASA cannot retest every component — relies on supplier certifications. SPI exploited this trust for nearly 20 years.</div>
+      <div class="fact-item"><strong>Talent scarcity factor</strong>Forensic materials re-testing requires specialist metallurgists. Shortage contributed to delay between OCO failure (2009) and root cause confirmation (2019).</div>
+      <div class="fact-item"><strong>Source</strong>NASA LSP Investigation Report, April 2019. DOJ Deferred Prosecution Agreement, April 2019.</div>
+    </div>
+
+    <div class="rp-sec">
+      <div class="rp-title">Node legend</div>
+      <div class="node-legend">
+        <div class="leg-item"><div class="leg-dot" style="background:var(--border2);border:1px solid var(--border2)"></div>Idle — not yet relevant</div>
+        <div class="leg-item"><div class="leg-dot" style="background:var(--gdim);border:1px solid var(--green)"></div>Verified — compliant</div>
+        <div class="leg-item"><div class="leg-dot" style="background:var(--adim);border:1px solid var(--amber)"></div>Flagged — anomaly detected</div>
+        <div class="leg-item"><div class="leg-dot" style="background:var(--rdim);border:1px solid var(--red)"></div>Critical — mission risk</div>
+        <div class="leg-item"><div class="leg-dot" style="background:var(--cdim);border:1px solid var(--cyan)"></div>Intercepted — Caelnex holds</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#1a1a00;border:1px dashed var(--amber)"></div>Blocked — awaiting waiver</div>
+      </div>
+    </div>
+
+    <div class="rp-sec">
+      <div class="rp-title">Caelnex organs activated</div>
+      <div id="organs-active" style="font-size:10px;color:var(--t1);line-height:1.8">
+        Advance simulation to see organ activations.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const STEPS = [
+  // ── STEP 1 ──
+  {
+    num:"Step 01 / 07", year:"1998",
+    title:"SPI awarded aluminium supply contract — supply chain established",
+    desc:"Sapa Profiles Inc. (SPI) of Oregon is contracted to supply aluminium extrusions for the Taurus XL rocket's payload fairing frangible joint system. Orbital Sciences Corporation receives the material and issues a purchase order. In the real world: no independent genealogy tracking. Certifications are paper documents filed in a binder. In Caelnex: every supplier becomes a node. Every material batch has a genealogy.",
+    graph: `<svg class="gsvg" viewBox="0 0 780 280">
+      <defs>
+        <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#1a2d40" stroke-width="1.5"/></marker>
+        <marker id="arr-g" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#00e676" stroke-width="1.5"/></marker>
+        <marker id="arr-a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#ffab00" stroke-width="1.5"/></marker>
+        <marker id="arr-r" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#ff3d3d" stroke-width="1.5"/></marker>
+      </defs>
+      <!-- SPI Supplier node — just entered -->
+      <g class="gn-ok"><rect x="30" y="110" width="130" height="56" rx="6"/><text x="95" y="133" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" font-weight="600">SPI SUPPLIER</text><text x="95" y="150" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">NODE CREATED</text></g>
+      <!-- PO node -->
+      <line x1="160" y1="138" x2="220" y2="138" class="gedge-ok"/>
+      <g class="gn-ok"><rect x="220" y="110" width="130" height="56" rx="6"/><text x="285" y="133" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" font-weight="600">PO-1998-TXL</text><text x="285" y="150" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">Purchase order node</text></g>
+      <!-- Material spec -->
+      <line x1="350" y1="138" x2="410" y2="138" class="gedge-ok"/>
+      <g class="gn-ok"><rect x="410" y="110" width="150" height="56" rx="6"/><text x="485" y="128" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" font-weight="600">AL-SPEC-FRJ</text><text x="485" y="144" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">Material spec node</text><text x="485" y="157" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">Rev A — tensile req.</text></g>
+      <!-- Certification required -->
+      <line x1="560" y1="138" x2="620" y2="138" class="gedge"/>
+      <g class="gn-idle"><rect x="620" y="110" width="130" height="56" rx="6"/><text x="685" y="133" text-anchor="middle" font-family="IBM Plex Mono" font-size="10">CERT-SPI-001</text><text x="685" y="150" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">Awaiting certification</text></g>
+      <!-- Caelnex label -->
+      <text x="390" y="240" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="#3a5068">Caelnex creates supplier node, purchase order node, and material specification node.</text>
+      <text x="390" y="258" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="#3a5068">Certification node is created but marked AWAITING — cannot be closed without verified test data upload.</text>
+    </svg>`,
+    intervention: {type:"flag", label:"Organ 4 — Supply chain activated", body:"In Caelnex, <strong>SPI is a graph node</strong> with edges to every purchase order, every material batch, and every certification they have ever supplied. The certification node for AL-SPEC-FRJ is created immediately and marked AWAITING — it cannot be closed without verified test data attached. This is the structural difference: in 1998, a paper cert was filed in a binder. In Caelnex, it is a live node that must be verified before it propagates downstream."},
+    comparison:null,
+    organs:["Organ 4 — Supply Chain: SPI node created, PO genealogy established"]
+  },
+
+  // ── STEP 2 ──
+  {
+    num:"Step 02 / 07", year:"1998–2008",
+    title:"SPI falsifies 19 years of tensile test certificates",
+    desc:"Over nearly two decades, SPI employees systematically falsify tensile test results for aluminium extrusions. Methods include: doctoring failing numbers to pass, increasing test machine speeds to artificially inflate readings, using non-compliant sample sizes. Thousands of false certificates are issued to hundreds of customers including Orbital Sciences and the US government. Nobody on the receiving end has a system to detect cross-batch statistical anomalies.",
+    graph: `<svg class="gsvg" viewBox="0 0 780 300">
+      <defs>
+        <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#1a2d40" stroke-width="1.5"/></marker>
+        <marker id="arr-g" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#00e676" stroke-width="1.5"/></marker>
+        <marker id="arr-a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#ffab00" stroke-width="1.5"/></marker>
+        <marker id="arr-r" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#ff3d3d" stroke-width="1.5"/></marker>
+      </defs>
+      <!-- SPI node — now flagged -->
+      <g class="gn-flag"><rect x="30" y="100" width="130" height="60" rx="6"/><text x="95" y="124" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" font-weight="600">SPI SUPPLIER</text><text x="95" y="140" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">ANOMALY DETECTED</text><text x="95" y="153" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">⚠ Stat. variance flag</text></g>
+      <!-- Certs — multiple batches all show pattern -->
+      <line x1="160" y1="80" x2="230" y2="60" class="gedge-flag"/>
+      <g class="gn-flag"><rect x="230" y="40" width="120" height="48" rx="6"/><text x="290" y="60" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" font-weight="600">CERT-2001</text><text x="290" y="76" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">⚠ At spec boundary</text></g>
+      <line x1="160" y1="130" x2="230" y2="130" class="gedge-flag"/>
+      <g class="gn-flag"><rect x="230" y="106" width="120" height="48" rx="6"/><text x="290" y="126" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" font-weight="600">CERT-2004</text><text x="290" y="142" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">⚠ At spec boundary</text></g>
+      <line x1="160" y1="155" x2="230" y2="200" class="gedge-flag"/>
+      <g class="gn-flag"><rect x="230" y="176" width="120" height="48" rx="6"/><text x="290" y="196" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" font-weight="600">CERT-2007</text><text x="290" y="212" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">⚠ At spec boundary</text></g>
+      <!-- AI pattern detection node -->
+      <line x1="350" y1="130" x2="430" y2="130" class="gedge-flag"/>
+      <g class="gn-intercept"><rect x="430" y="100" width="160" height="60" rx="6"/><text x="510" y="124" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" font-weight="600">CAELNEX AI</text><text x="510" y="140" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">Pattern: 9/9 certs at</text><text x="510" y="153" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">exact spec boundary</text></g>
+      <!-- Escalation to QE -->
+      <line x1="590" y1="130" x2="640" y2="130" class="gedge-flag"/>
+      <g class="gn-flag"><rect x="640" y="106" width="110" height="48" rx="6"/><text x="695" y="126" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" font-weight="600">QE-REVIEW</text><text x="695" y="142" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">Escalated to QA lead</text></g>
+      <text x="390" y="268" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="#3a5068">Caelnex AI layer detects that 9 consecutive SPI certificate values cluster at the exact specification boundary.</text>
+      <text x="390" y="284" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="#ffab00">Natural test data distributes around the mean. Data clustering at the exact pass/fail boundary is a statistical fraud signature.</text>
+    </svg>`,
+    intervention: {type:"intercept", label:"Caelnex AI anomaly pattern — statistical fraud signature detected", body:"This is the key intervention. In the real world, nobody had a system that looked across all SPI batches simultaneously and asked: <strong>why do every single certificate value cluster precisely at the specification boundary?</strong> Genuine test data distributes normally. Data that sits exactly at the pass/fail threshold, batch after batch, is statistically improbable — it is the signature of a system gaming the threshold. Caelnex's cross-batch statistical analysis would have flagged SPI's supplier node as anomalous within the first three to four batches. Not after 19 years. Not after $700 million."},
+    comparison:null,
+    organs:["Organ 4 — Supply Chain: statistical variance flag on SPI node","Organ 7 — Compliance Index: cross-batch cert analysis triggered","Caelnex AI — anomaly pattern: boundary-clustering fraud signature"]
+  },
+
+  // ── STEP 3 ──
+  {
+    num:"Step 03 / 07", year:"February 24, 2009",
+    title:"OCO Mission — Taurus XL launches. Fairing fails to separate.",
+    desc:"NASA's Orbiting Carbon Observatory lifts off on a Taurus XL from Vandenberg AFB. Four minutes after launch the payload fairing — the clamshell nosecone protecting the satellite during ascent — fails to separate. The extra mass of the fairing prevents the vehicle from reaching orbital velocity. The $273 million satellite plunges into the Southern Ocean near Antarctica. This is the real-world outcome. In the Caelnex timeline, this launch does not happen in this form.",
+    graph: `<svg class="gsvg" viewBox="0 0 780 310">
+      <defs>
+        <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#1a2d40" stroke-width="1.5"/></marker>
+        <marker id="arr-g" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#00e676" stroke-width="1.5"/></marker>
+        <marker id="arr-a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#ffab00" stroke-width="1.5"/></marker>
+        <marker id="arr-r" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#ff3d3d" stroke-width="1.5"/></marker>
+      </defs>
+      <!-- Reality path — critical chain -->
+      <text x="180" y="26" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" fill="#7f1d1d">REALITY — no Caelnex</text>
+      <g class="gn-critical"><rect x="30" y="40" width="120" height="52" rx="6"/><text x="90" y="62" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" font-weight="600">SPI ALU</text><text x="90" y="78" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">Sub-spec — accepted</text></g>
+      <line x1="150" y1="66" x2="200" y2="66" class="gedge-critical"/>
+      <g class="gn-critical"><rect x="200" y="40" width="120" height="52" rx="6"/><text x="260" y="62" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" font-weight="600">FRJ-RAIL</text><text x="260" y="78" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">Installed — unverified</text></g>
+      <line x1="320" y1="66" x2="370" y2="66" class="gedge-critical"/>
+      <g class="gn-critical"><rect x="370" y="40" width="120" height="52" rx="6"/><text x="430" y="62" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" font-weight="600">FAIRING</text><text x="430" y="78" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">Separation fails</text></g>
+      <line x1="490" y1="66" x2="540" y2="66" class="gedge-critical"/>
+      <g class="gn-critical"><rect x="540" y="40" width="120" height="52" rx="6"/><text x="600" y="62" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" font-weight="600">OCO $273M</text><text x="600" y="78" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">LOST — Pacific Ocean</text></g>
+
+      <!-- Caelnex path — intercepted -->
+      <text x="180" y="146" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" fill="#00e676">CAELNEX TIMELINE — intercepted at receiving, 2001</text>
+      <g class="gn-flag"><rect x="30" y="160" width="120" height="52" rx="6"/><text x="90" y="182" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" font-weight="600">SPI ALU</text><text x="90" y="198" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">⚠ Stat flag active</text></g>
+      <line x1="150" y1="186" x2="200" y2="186" class="gedge-flag"/>
+      <g class="gn-intercept"><rect x="200" y="160" width="130" height="52" rx="6"/><text x="265" y="178" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" font-weight="600">ORGAN 7</text><text x="265" y="194" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">INTERCEPT</text><text x="265" y="207" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">Independent retest req.</text></g>
+      <line x1="330" y1="186" x2="380" y2="186" class="gedge-flag"/>
+      <g class="gn-blocked"><rect x="380" y="160" width="130" height="52" rx="6"/><text x="445" y="182" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" font-weight="600">FRJ-RAIL</text><text x="445" y="198" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">BLOCKED — install</text><text x="445" y="211" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">held pending retest</text></g>
+      <line x1="510" y1="186" x2="560" y2="186" stroke="#1a2d40" stroke-width="1" stroke-dasharray="3 3"/>
+      <g class="gn-idle"><rect x="560" y="160" width="130" height="52" rx="6"/><text x="625" y="182" text-anchor="middle" font-family="IBM Plex Mono" font-size="10">FAIRING INSTALL</text><text x="625" y="198" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">Awaiting clearance</text></g>
+
+      <text x="390" y="262" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="#3a5068">In the Caelnex timeline: SPI's fraud is flagged years before the OCO launch.</text>
+      <text x="390" y="278" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="#00e676">Independent retest is triggered. Sub-spec material is rejected. Supplier node is escalated. Mission is protected.</text>
+    </svg>`,
+    intervention: {type:"blocked", label:"Organ 7 — Frangible joint rail installation blocked before OCO campaign", body:"The Organ 7 pre-submission validation engine prevents the FRJ-RAIL installation from being logged as complete while the SPI supplier node carries an unresolved statistical anomaly flag. The system message to the integration technician: <strong>'Installation hold active. SPI batch CERT-2004 has an unresolved statistical variance flag. Independent materials retest required before this step can be closed. Contact QA lead M. Singh for waiver or retest authorisation.'</strong> The integration step cannot proceed. The fairing cannot be installed. The launch cannot happen until this is resolved."},
+    comparison: {
+      without:["No cross-batch statistical analysis — each cert reviewed in isolation","Paper-based certification filing — no queryable genealogy","Integration step proceeds despite unverified material","OCO launches with sub-spec frangible joint rail","Fairing fails to separate — $273M satellite lost","Investigation begins with no system-of-record"],
+      with:["SPI node carries statistical anomaly flag from batch 3 onward","Cross-batch variance detected by Caelnex AI: 9/9 certs at exact spec boundary","FRJ-RAIL installation blocked pending independent retest","Independent retest returns: material fails tensile spec","SPI suspended from campaign. Replacement supplier engaged","OCO launches with verified material — mission succeeds"]
+    },
+    organs:["Organ 4 — Supply Chain: SPI batch flagged, install blocked","Organ 7 — Compliance Index: pre-submission intercept on FRJ-RAIL step","Organ 3 — Manufacturing: integration hold issued","Organ 6 — Compliance: QA escalation logged and attributed"]
+  },
+
+  // ── STEP 4 ──
+  {
+    num:"Step 04 / 07", year:"2009–2011",
+    title:"Talent scarcity delays investigation — same supplier remains active",
+    desc:"After OCO's failure, NASA's investigation correctly identifies the frangible joint as the probable failure point but cannot confirm a single root cause. The forensic materials re-testing requires specialist metallurgists with specific expertise in aerospace-grade aluminium tensile failure analysis. This talent is scarce. The investigation takes three years to reach a probable cause — and the programme does not replace SPI in the interim. The Glory mission proceeds with the same fairing system.",
+    graph: `<svg class="gsvg" viewBox="0 0 780 280">
+      <defs>
+        <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#1a2d40" stroke-width="1.5"/></marker>
+        <marker id="arr-a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#ffab00" stroke-width="1.5"/></marker>
+      </defs>
+      <!-- Talent scarcity chain -->
+      <g class="gn-critical"><rect x="20" y="80" width="130" height="56" rx="6"/><text x="85" y="103" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" font-weight="600">OCO FAILURE</text><text x="85" y="119" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">Root cause unknown</text><text x="85" y="131" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">Investigation open</text></g>
+      <line x1="150" y1="108" x2="200" y2="108" class="gedge-flag"/>
+      <g class="gn-flag"><rect x="200" y="80" width="140" height="56" rx="6"/><text x="270" y="100" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" font-weight="600">TALENT GAP</text><text x="270" y="116" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">Specialist metallurgists</text><text x="270" y="128" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">scarce — retest delayed</text></g>
+      <line x1="340" y1="108" x2="390" y2="108" class="gedge-flag"/>
+      <g class="gn-flag"><rect x="390" y="80" width="140" height="56" rx="6"/><text x="460" y="100" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" font-weight="600">SPI ACTIVE</text><text x="460" y="116" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">Not suspended — still</text><text x="460" y="128" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">supplying programme</text></g>
+      <line x1="530" y1="108" x2="580" y2="108" class="gedge-critical"/>
+      <g class="gn-critical"><rect x="580" y="80" width="140" height="56" rx="6"/><text x="650" y="100" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" font-weight="600">GLORY PREP</text><text x="650" y="116" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">Same fairing system</text><text x="650" y="128" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">Same supplier — risk</text></g>
+      <!-- Caelnex would have -->
+      <text x="390" y="188" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="#00e676">In Caelnex: institutional memory preserves the decision graph from OCO investigation.</text>
+      <text x="390" y="206" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="#00e676">The anomaly decision node on SPI is permanently linked to the Glory campaign before integration begins.</text>
+      <text x="390" y="224" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="#ffab00">Talent scarcity is mitigated: Caelnex's AI surfaces prior decision DEC-OCO-019 automatically.</text>
+      <text x="390" y="242" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="#ffab00">The new QA lead does not need to have been present at the OCO investigation. The graph remembers.</text>
+    </svg>`,
+    intervention:{type:"prevented", label:"Organ 2 — Institutional memory bridges the talent gap", body:"This is where the civilisational memory argument becomes concrete. Between OCO (2009) and Glory (2011), the investigation team changed. New engineers joined who had not been present for the OCO failure. In the real world, the knowledge of what happened — the specific suspicion about the frangible joint, the unresolved material question — was carried in people's heads and in incomplete investigation files. <strong>In Caelnex: Decision Node DEC-OCO-019</strong> links the OCO anomaly disposition to the SPI supplier node, the frangible joint component, and the unresolved material question — permanently, queryably, and accessible to any engineer onboarding to the Glory campaign. The institutional memory does not depend on the specific humans who were there. It is in the graph."},
+    comparison:null,
+    organs:["Organ 2 — Institutional Memory: DEC-OCO-019 decision node surfaced for Glory campaign","Caelnex AI — prior anomaly pattern matched to Glory campaign nodes","Organ 4 — Supply Chain: SPI node carries unresolved flag from OCO","Organ 5 — Launch Ops: Glory readiness board shows open SPI anomaly"]
+  },
+
+  // ── STEP 5 ──
+  {
+    num:"Step 05 / 07", year:"March 4, 2011",
+    title:"Glory Mission — identical failure. Second $424M satellite lost.",
+    desc:"Two years after OCO, NASA's Glory climate satellite launches on a Taurus XL from Vandenberg. The payload fairing — the same system, from the same supplier, with the same unresolved material question — again fails to separate. The $424M satellite is lost. Total loss is now over $697 million. Two complete scientific programmes representing years of researcher work are destroyed. In the Caelnex timeline, Glory does not fail this way.",
+    graph: `<svg class="gsvg" viewBox="0 0 780 290">
+      <defs>
+        <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#1a2d40" stroke-width="1.5"/></marker>
+        <marker id="arr-g" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#00e676" stroke-width="1.5"/></marker>
+        <marker id="arr-a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#ffab00" stroke-width="1.5"/></marker>
+        <marker id="arr-r" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#ff3d3d" stroke-width="1.5"/></marker>
+      </defs>
+      <!-- REALITY: compounding disaster -->
+      <text x="160" y="20" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" fill="#7f1d1d">REALITY — total loss: $697M+</text>
+      <g class="gn-critical"><rect x="20" y="30" width="100" height="48" rx="6"/><text x="70" y="52" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" font-weight="600">SPI ALU</text><text x="70" y="66" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">Sub-spec</text></g>
+      <line x1="120" y1="54" x2="160" y2="54" class="gedge-critical"/>
+      <g class="gn-critical"><rect x="160" y="30" width="100" height="48" rx="6"/><text x="210" y="52" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" font-weight="600">OCO FAIL</text><text x="210" y="66" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">$273M lost</text></g>
+      <line x1="260" y1="54" x2="300" y2="54" class="gedge-critical"/>
+      <g class="gn-critical"><rect x="300" y="30" width="120" height="48" rx="6"/><text x="360" y="49" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" font-weight="600">NO ROOT CAUSE</text><text x="360" y="63" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">SPI still supplying</text></g>
+      <line x1="420" y1="54" x2="460" y2="54" class="gedge-critical"/>
+      <g class="gn-critical"><rect x="460" y="30" width="100" height="48" rx="6"/><text x="510" y="52" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" font-weight="600">GLORY FAIL</text><text x="510" y="66" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">$424M lost</text></g>
+      <line x1="560" y1="54" x2="600" y2="54" class="gedge-critical"/>
+      <g class="gn-critical"><rect x="600" y="30" width="140" height="48" rx="6"/><text x="670" y="49" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" font-weight="600">10YR INVESTIGATION</text><text x="670" y="63" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">Root cause 2019</text></g>
+
+      <!-- CAELNEX: both missions protected -->
+      <text x="270" y="128" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" fill="#00e676">CAELNEX TIMELINE — both missions protected</text>
+      <g class="gn-ok"><rect x="20" y="138" width="100" height="48" rx="6"/><text x="70" y="160" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" font-weight="600">SPI FLAG</text><text x="70" y="174" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">Detected 2001</text></g>
+      <line x1="120" y1="162" x2="160" y2="162" class="gedge-ok"/>
+      <g class="gn-ok"><rect x="160" y="138" width="100" height="48" rx="6"/><text x="210" y="160" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" font-weight="600">RETEST</text><text x="210" y="174" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">SPI fails — rejected</text></g>
+      <line x1="260" y1="162" x2="300" y2="162" class="gedge-ok"/>
+      <g class="gn-ok"><rect x="300" y="138" width="100" height="48" rx="6"/><text x="350" y="157" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" font-weight="600">ALT SUPPLIER</text><text x="350" y="171" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">Verified material</text></g>
+      <line x1="400" y1="162" x2="440" y2="162" class="gedge-ok"/>
+      <g class="gn-ok"><rect x="440" y="138" width="100" height="48" rx="6"/><text x="490" y="160" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" font-weight="600">OCO ✓</text><text x="490" y="174" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">Mission success</text></g>
+      <line x1="540" y1="162" x2="580" y2="162" class="gedge-ok"/>
+      <g class="gn-ok"><rect x="580" y="138" width="100" height="48" rx="6"/><text x="630" y="160" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" font-weight="600">GLORY ✓</text><text x="630" y="174" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">Mission success</text></g>
+
+      <!-- Loss avoidance callout -->
+      <rect x="20" y="220" width="740" height="48" rx="4" fill="#0a2e1a" stroke="#00e676" stroke-width="1"/>
+      <text x="390" y="241" text-anchor="middle" font-family="IBM Plex Mono" font-size="11" fill="#00e676" font-weight="600">CAELNEX OUTCOME: Both missions succeed. $697M preserved. SPI fraud exposed in 2001, not 2019.</text>
+      <text x="390" y="258" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="#00e676">18 years of additional fraud prevented. Hundreds of other customers protected by early exposure.</text>
+    </svg>`,
+    intervention:{type:"prevented", label:"Both missions protected — $697M preserved — fraud exposed 18 years earlier", body:"The Caelnex counterfactual outcome: <strong>OCO launches successfully in 2009</strong> with verified alternative supplier material. <strong>Glory launches successfully in 2011</strong> on the same supply chain, now clean. SPI's fraud is exposed in 2001 — not 2019 — when the independent retest triggers and material fails. The Department of Justice investigation begins 18 years earlier. Hundreds of other customers receiving falsified SPI certificates are protected. The supply chain is clean. Two climate science programmes deliver their data. The total preserved value exceeds $697 million plus 18 years of avoided downstream fraud across the entire SPI customer base."},
+    comparison:{
+      without:["$273M OCO satellite lost — Feb 2009","$424M Glory satellite lost — March 2011","Total mission loss: $697M+","Root cause confirmed: April 2019 — 10 years after first failure","SPI fraud runs undetected for 19 years total","Hundreds of other customers also receive sub-spec material"],
+      with:["SPI statistical anomaly flagged — approximately 2001","Independent retest triggered — SPI material fails spec","SPI suspended from programme immediately","Alternative verified supplier engaged before OCO campaign","OCO mission success — $273M science mission delivered","Glory mission success — $424M science mission delivered"]
+    },
+    organs:["Organ 4 — Supply Chain: SPI permanently flagged, alternative supplier onboarded","Organ 7 — Compliance Index: both campaign integration holds cleared after retest","Organ 2 — Institutional Memory: decision nodes from SPI rejection applied to all future campaigns","Organ 6 — Compliance: complete audit trail of SPI rejection submitted to NASA OIG"]
+  },
+
+  // ── STEP 6 ──
+  {
+    num:"Step 06 / 07", year:"2012–2019",
+    title:"10-year investigation — root cause finally confirmed",
+    desc:"NASA's forensic investigation, eventually involving the OIG and the Department of Justice, takes a decade to confirm what Caelnex would have surfaced in 2001. In 2019 SPI pleads guilty, pays $46M — a fraction of the $697M loss — and is debarred. NASA's Jim Norman states plainly: 'When testing results are altered and certifications are provided falsely, missions fail.' The systemic lesson: the aerospace supply chain cannot be protected by paper certifications trusted on faith. It requires an independent, cryptographically traceable, continuously monitored genealogy system.",
+    graph: `<svg class="gsvg" viewBox="0 0 780 240">
+      <defs>
+        <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#1a2d40" stroke-width="1.5"/></marker>
+        <marker id="arr-g" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#00e676" stroke-width="1.5"/></marker>
+      </defs>
+      <!-- Timeline of justice -->
+      <g class="gn-critical"><rect x="20" y="60" width="110" height="52" rx="6"/><text x="75" y="82" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" font-weight="600">GLORY FAIL</text><text x="75" y="96" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">March 2011</text></g>
+      <line x1="130" y1="86" x2="180" y2="86" class="gedge"/>
+      <g class="gn-flag"><rect x="180" y="60" width="110" height="52" rx="6"/><text x="235" y="82" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" font-weight="600">FORENSIC TEST</text><text x="235" y="96" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">2012 — material fails</text></g>
+      <line x1="290" y1="86" x2="340" y2="86" class="gedge"/>
+      <g class="gn-flag"><rect x="340" y="60" width="110" height="52" rx="6"/><text x="395" y="82" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" font-weight="600">NASA OIG</text><text x="395" y="96" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">Investigation 2015</text></g>
+      <line x1="450" y1="86" x2="500" y2="86" class="gedge"/>
+      <g class="gn-flag"><rect x="500" y="60" width="110" height="52" rx="6"/><text x="555" y="82" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" font-weight="600">DOJ PLEA</text><text x="555" y="96" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">April 2019 — $46M</text></g>
+      <line x1="610" y1="86" x2="660" y2="86" class="gedge-ok"/>
+      <g class="gn-ok"><rect x="660" y="60" width="100" height="52" rx="6"/><text x="710" y="82" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" font-weight="600">SPI DEBARRED</text><text x="710" y="96" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">Govt. contracts</text></g>
+
+      <text x="390" y="168" text-anchor="middle" font-family="IBM Plex Mono" font-size="11" fill="#ffab00" font-weight="600">10 years from first failure to confirmed root cause.</text>
+      <text x="390" y="186" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="#7a90a8">$697M lost. $46M recovered. Ratio: 6.6 cents recovered per dollar lost.</text>
+      <text x="390" y="204" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="#00e676">Caelnex: same outcome in 2001. $697M preserved. 18 years of fraud stopped.</text>
+    </svg>`,
+    intervention:{type:"flag", label:"The systemic lesson — what NASA's Jim Norman said in 2019", body:"<strong>'NASA relies on the integrity of our industry throughout the supply chain. While we do perform our own testing, NASA is not able to retest every single component. That is why we require and pay for certain components to be tested and certified by the supplier. When testing results are altered and certifications are provided falsely, missions fail.'</strong> — Jim Norman, NASA Director for Launch Services, April 2019. This is the exact problem Caelnex solves. Not by trusting suppliers less, but by building a system where statistical anomalies in certification data are impossible to hide — because the graph sees all batches simultaneously, not one certificate at a time."},
+    comparison:null,
+    organs:["All six organs + Organ 7 — the complete Caelnex response to this failure mode"]
+  },
+
+  // ── STEP 7 ──
+  {
+    num:"Step 07 / 07", year:"Caelnex counterfactual — complete",
+    title:"How Caelnex would have prevented $697M in losses — node by node",
+    desc:"The complete Caelnex intervention map. Every node that would have lit, every organ that would have activated, every interception that would have occurred — mapped against the real failure chain. This is not a hypothetical feature list. It is a direct application of the Caelnex architecture as specified in the Technical Brief to a documented, judicially confirmed aerospace failure.",
+    graph: `<svg class="gsvg" viewBox="0 0 780 340">
+      <defs>
+        <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#1a2d40" stroke-width="1.5"/></marker>
+        <marker id="arr-g" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#00e676" stroke-width="1.5"/></marker>
+        <marker id="arr-a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#ffab00" stroke-width="1.5"/></marker>
+      </defs>
+      <!-- Full intervention graph -->
+      <g class="gn-flag"><rect x="10" y="40" width="100" height="52" rx="6"/><text x="60" y="62" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" font-weight="600">SPI NODE</text><text x="60" y="74" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">Organ 4</text><text x="60" y="86" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">⚠ Stat flag</text></g>
+      <line x1="110" y1="66" x2="150" y2="66" class="gedge-flag"/>
+      <g class="gn-intercept"><rect x="150" y="40" width="110" height="52" rx="6"/><text x="205" y="57" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" font-weight="600">AI PATTERN</text><text x="205" y="71" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">Organ 7</text><text x="205" y="84" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">Boundary cluster</text></g>
+      <line x1="260" y1="66" x2="300" y2="66" class="gedge-flag"/>
+      <g class="gn-intercept"><rect x="300" y="40" width="110" height="52" rx="6"/><text x="355" y="57" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" font-weight="600">RETEST REQ</text><text x="355" y="71" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">Organ 7</text><text x="355" y="84" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">Install blocked</text></g>
+      <line x1="410" y1="66" x2="450" y2="66" class="gedge-ok"/>
+      <g class="gn-critical"><rect x="450" y="40" width="110" height="52" rx="6"/><text x="505" y="57" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" font-weight="600">RETEST FAIL</text><text x="505" y="71" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">Material sub-spec</text><text x="505" y="84" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">confirmed</text></g>
+      <line x1="560" y1="66" x2="600" y2="66" class="gedge-ok"/>
+      <g class="gn-ok"><rect x="600" y="40" width="110" height="52" rx="6"/><text x="655" y="57" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" font-weight="600">SPI EJECTED</text><text x="655" y="71" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">Organ 4</text><text x="655" y="84" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">New supplier</text></g>
+
+      <!-- Decision nodes -->
+      <line x1="505" y1="92" x2="505" y2="140" class="gedge-ok"/>
+      <g class="gn-ok"><rect x="440" y="140" width="130" height="52" rx="6"/><text x="505" y="157" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" font-weight="600">DEC-SPI-001</text><text x="505" y="171" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">Decision node</text><text x="505" y="184" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">Organ 2 — rationale</text></g>
+
+      <!-- Memory to future missions -->
+      <line x1="505" y1="192" x2="505" y2="230" class="gedge-ok"/>
+      <g class="gn-ok"><rect x="430" y="230" width="150" height="52" rx="6"/><text x="505" y="250" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" font-weight="600">FUTURE MISSIONS</text><text x="505" y="264" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">SPI never re-enters</text><text x="505" y="277" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">supply chain graph</text></g>
+
+      <!-- Compliance trail -->
+      <line x1="355" y1="92" x2="355" y2="230" class="gedge-ok"/>
+      <g class="gn-ok"><rect x="270" y="230" width="150" height="52" rx="6"/><text x="345" y="250" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" font-weight="600">AUDIT TRAIL</text><text x="345" y="264" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">Organ 6</text><text x="345" y="277" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">Complete from day 1</text></g>
+
+      <!-- OCO and Glory success -->
+      <line x1="655" y1="92" x2="655" y2="140" class="gedge-ok"/>
+      <g class="gn-ok"><rect x="600" y="140" width="150" height="52" rx="6"/><text x="675" y="162" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" font-weight="600">OCO + GLORY ✓</text><text x="675" y="178" text-anchor="middle" font-family="IBM Plex Mono" font-size="8">Both missions succeed</text></g>
+
+      <rect x="10" y="302" width="760" height="28" rx="3" fill="#0a2e1a" stroke="#00e676" stroke-width="1"/>
+      <text x="390" y="321" text-anchor="middle" font-family="IBM Plex Mono" font-size="11" fill="#00e676" font-weight="600">RESULT: $697,000,000 preserved · SPI fraud exposed 18 years early · Both scientific missions delivered · All six organs + Organ 7 activated</text>
+    </svg>`,
+    intervention:{type:"prevented", label:"Simulation complete — Caelnex MVP delivers on all four scenario types", body:"This simulation demonstrates Caelnex's response to three of our four original scenarios simultaneously: <strong>Scenario 2</strong> (wrong revision / wrong material supplier) — intercepted at Organ 4. <strong>Scenario 4</strong> (institutional memory — Marcus) — the decision node DEC-SPI-001 prevents the Glory team from repeating the OCO supply chain in the absence of the original investigators. And the <strong>Talent Scarcity strategic risk</strong> — mitigated because Caelnex's AI pattern detection does not require a specialist metallurgist to notice that nine consecutive certificate values cluster at the exact specification boundary. The graph notices. Every time."},
+    comparison:{
+      without:["$273M OCO satellite — lost Feb 2009","$424M Glory satellite — lost March 2011","Root cause confirmed April 2019 — 10 years later","SPI fraud runs for 19 years total","$46M recovered of $697M lost — 6.6 cents per dollar","Hundreds of other customers also defrauded"],
+      with:["SPI statistical anomaly flagged ~2001 — before OCO campaign","Independent retest: material fails — SPI ejected from programme","Alternative supplier verified — both campaigns proceed cleanly","OCO mission success — $273M science delivered","Glory mission success — $424M science delivered","SPI fraud exposed 18 years earlier — broader supply chain protected"]
+    },
+    organs:["Organ 2 — Institutional Memory: DEC-SPI-001 decision node","Organ 4 — Supply Chain: SPI genealogy, stat flag, ejection","Organ 7 — Compliance Index: pre-submission hold, retest intercept","Organ 6 — Compliance: complete traceable audit trail","Organ 5 — Launch Ops: both readiness boards clear after retest","Caelnex AI — boundary-clustering fraud signature detected"]
+  }
+];
+
+let current = 1;
+
+function goTo(n) {
+  current = n;
+  render();
+  document.querySelectorAll('.tl-step').forEach((el,i) => {
+    el.classList.remove('active','done','flagged');
+    if(i+1 < n) el.classList.add('done');
+    else if(i+1 === n) el.classList.add('active');
+    else if([2,3,5].includes(i+1)) el.classList.add('flagged');
+  });
+  document.getElementById('sim-status').textContent = `Step ${n} of ${STEPS.length}`;
+}
+
+function render() {
+  const s = STEPS[current-1];
+  const pct = Math.round((current/STEPS.length)*100);
+
+  let html = `
+    <div class="step-header">
+      <div class="step-num">${s.num} &nbsp;·&nbsp; ${s.year}</div>
+      <div class="step-title">${s.title}</div>
+      <div class="step-desc">${s.desc}</div>
+    </div>
+    <div class="controls">
+      <button class="btn" onclick="goTo(${Math.max(1,current-1)})" ${current===1?'disabled':''}>← Prev</button>
+      <button class="btn primary" onclick="goTo(${Math.min(STEPS.length,current+1)})" ${current===STEPS.length?'disabled':''}>Next →</button>
+      <div class="progress-wrap"><div class="progress-fill" style="width:${pct}%"></div></div>
+      <span style="font-size:10px;color:var(--t2)">${pct}%</span>
+    </div>
+    <div class="graph-wrap">
+      <div class="graph-bar">
+        <strong>Caelnex configuration graph</strong>
+        <span style="margin-left:auto;font-size:9px">Node state at: ${s.year}</span>
+      </div>
+      <div class="graph-svg-wrap">${s.graph}</div>
+    </div>`;
+
+  if(s.intervention) {
+    html += `<div class="intervention ${s.intervention.type}">
+      <div class="int-label ${s.intervention.type}">${s.intervention.label}</div>
+      <div class="int-body">${s.intervention.body}</div>
+    </div>`;
+  }
+
+  if(s.comparison) {
+    html += `<div class="comparison">
+      <div class="comp-card without">
+        <div class="comp-title">Without Caelnex — what happened</div>
+        ${s.comparison.without.map(i=>`<div class="comp-item">${i}</div>`).join('')}
+      </div>
+      <div class="comp-card with">
+        <div class="comp-title">With Caelnex — what would have happened</div>
+        ${s.comparison.with.map(i=>`<div class="comp-item">${i}</div>`).join('')}
+      </div>
+    </div>`;
+  }
+
+  document.getElementById('centre').innerHTML = html;
+
+  // update organs panel
+  document.getElementById('organs-active').innerHTML = s.organs
+    .map(o => `<div style="padding:3px 0;border-bottom:1px solid var(--border);color:var(--green)">${o}</div>`)
+    .join('') || 'No organs active at this step.';
+}
+
+goTo(1);
+</script>
+</body>
+</html>

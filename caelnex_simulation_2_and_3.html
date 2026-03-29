@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CAELNEX — Failure Simulations II: Ariane 5 & Mars Climate Orbiter</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg0:#060a0e;--bg1:#0c1219;--bg2:#111b26;--bg3:#162233;
+  --border:#1a2d40;--border2:#203650;
+  --t0:#e8edf2;--t1:#7a90a8;--t2:#3a5068;
+  --green:#00e676;--gdim:#0a2e1a;
+  --amber:#ffab00;--adim:#2e2000;
+  --red:#ff3d3d;--rdim:#2e0a0a;
+  --blue:#40a9ff;--bdim:#0a1e35;
+  --purple:#b07fff;--pdim:#1a0a35;
+  --cyan:#00e5ff;--cdim:#002e35;
+  --orange:#ff7043;--odim:#2e1a0a;
+  --mono:'IBM Plex Mono',monospace;
+  --sans:'IBM Plex Sans',sans-serif;
+}
+html,body{height:100%;background:var(--bg0);color:var(--t0);font-family:var(--mono);overflow-x:hidden}
+
+/* CASE SELECTOR */
+.case-selector{background:var(--bg1);border-bottom:2px solid var(--border);display:flex;align-items:stretch}
+.case-tab{flex:1;padding:14px 20px;cursor:pointer;border-right:1px solid var(--border);transition:all .2s;display:flex;flex-direction:column;gap:4px}
+.case-tab:last-child{border-right:none}
+.case-tab:hover{background:var(--bg2)}
+.case-tab.active{background:var(--bg3);border-bottom:3px solid var(--cyan)}
+.case-tab-label{font-size:9px;letter-spacing:.14em;color:var(--t2);text-transform:uppercase}
+.case-tab-title{font-size:12px;font-weight:600;color:var(--t0)}
+.case-tab-loss{font-size:10px;font-weight:600}
+.loss-a{color:var(--orange)}
+.loss-b{color:var(--purple)}
+
+/* LAYOUT */
+.shell{display:grid;grid-template-columns:280px 1fr 260px;height:calc(100vh - 90px)}
+.left-panel{background:var(--bg1);border-right:1px solid var(--border);overflow-y:auto}
+.centre{overflow-y:auto;padding:16px}
+.right-panel{background:var(--bg1);border-left:1px solid var(--border);overflow-y:auto}
+
+/* TIMELINE */
+.tl-wrap{padding:10px}
+.tl-title{font-size:9px;letter-spacing:.16em;color:var(--t2);text-transform:uppercase;padding:6px 0 8px;border-bottom:1px solid var(--border);margin-bottom:8px}
+.tl-step{padding:8px 10px;border-radius:3px;cursor:pointer;border-left:3px solid transparent;margin-bottom:4px;transition:all .2s}
+.tl-step:hover{background:var(--bg2)}
+.tl-step.active{background:var(--bg3);border-left-color:var(--cyan)}
+.tl-step.done{border-left-color:var(--green);opacity:.65}
+.tl-step.warn{border-left-color:var(--red)}
+.tl-year{font-size:9px;color:var(--t2);margin-bottom:3px;letter-spacing:.04em}
+.tl-event{font-size:11px;color:var(--t0);line-height:1.4}
+.tl-sub{font-size:10px;color:var(--t1);margin-top:3px;line-height:1.4}
+.badge{display:inline-block;font-size:8px;padding:1px 6px;border-radius:2px;margin-top:4px;letter-spacing:.06em;font-weight:600}
+.b-red{background:var(--rdim);color:var(--red);border:1px solid rgba(255,61,61,.3)}
+.b-amber{background:var(--adim);color:var(--amber);border:1px solid rgba(255,171,0,.3)}
+.b-green{background:var(--gdim);color:var(--green);border:1px solid rgba(0,230,118,.3)}
+.b-blue{background:var(--bdim);color:var(--blue);border:1px solid rgba(64,169,255,.3)}
+.b-orange{background:var(--odim);color:var(--orange);border:1px solid rgba(255,112,67,.3)}
+.b-purple{background:var(--pdim);color:var(--purple);border:1px solid rgba(176,127,255,.3)}
+
+/* CENTRE */
+.step-hdr{margin-bottom:12px}
+.step-num{font-size:9px;color:var(--t2);letter-spacing:.14em;text-transform:uppercase;margin-bottom:3px}
+.step-title{font-size:17px;font-weight:600;color:var(--t0);margin-bottom:5px;line-height:1.3}
+.step-desc{font-size:11px;color:var(--t1);line-height:1.7;margin-bottom:12px;max-width:620px}
+
+.controls{display:flex;gap:8px;margin-bottom:12px;align-items:center}
+.btn{font-family:var(--mono);font-size:10px;padding:5px 12px;border:1px solid var(--border2);background:var(--bg2);color:var(--t1);cursor:pointer;letter-spacing:.06em;border-radius:2px;transition:all .15s}
+.btn:hover{border-color:var(--cyan);color:var(--cyan)}
+.btn.primary{border-color:var(--cyan);color:var(--cyan);background:var(--cdim)}
+.btn:disabled{opacity:.3;cursor:not-allowed}
+.progress-wrap{flex:1;height:3px;background:var(--bg3);border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;background:var(--cyan);transition:width .4s ease}
+
+.graph-wrap{background:var(--bg1);border:1px solid var(--border);border-radius:3px;margin-bottom:12px;overflow:hidden}
+.graph-bar{background:var(--bg2);padding:6px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;font-size:10px;color:var(--t1)}
+.graph-bar strong{color:var(--t0);margin-right:auto}
+
+.ivn{border-radius:3px;padding:12px 14px;margin-bottom:12px;border-left:3px solid}
+.ivn.intercept{background:rgba(0,229,255,.06);border-color:var(--cyan)}
+.ivn.flag{background:rgba(255,171,0,.06);border-color:var(--amber)}
+.ivn.blocked{background:rgba(255,61,61,.06);border-color:var(--red)}
+.ivn.prevented{background:rgba(0,230,118,.06);border-color:var(--green)}
+.ivn.orange{background:rgba(255,112,67,.06);border-color:var(--orange)}
+.ivn-lbl{font-size:9px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;margin-bottom:5px}
+.ivn-lbl.intercept{color:var(--cyan)}.ivn-lbl.flag{color:var(--amber)}.ivn-lbl.blocked{color:var(--red)}.ivn-lbl.prevented{color:var(--green)}.ivn-lbl.orange{color:var(--orange)}
+.ivn-body{font-size:11px;color:var(--t1);line-height:1.7}
+.ivn-body strong{color:var(--t0)}
+
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.cmp-card{border-radius:3px;padding:11px;border:1px solid}
+.cmp-card.without{border-color:var(--red);background:var(--rdim)}
+.cmp-card.with{border-color:var(--green);background:var(--gdim)}
+.cmp-ttl{font-size:9px;letter-spacing:.12em;text-transform:uppercase;font-weight:600;margin-bottom:7px}
+.cmp-card.without .cmp-ttl{color:var(--red)}
+.cmp-card.with .cmp-ttl{color:var(--green)}
+.cmp-item{font-size:10px;color:var(--t1);padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04);line-height:1.5}
+.cmp-item:last-child{border:none}
+
+/* RIGHT PANEL */
+.rp-sec{border-bottom:1px solid var(--border);padding:11px 13px}
+.rp-ttl{font-size:9px;letter-spacing:.14em;color:var(--t2);text-transform:uppercase;margin-bottom:8px}
+.fact{font-size:10px;color:var(--t1);padding:4px 0;border-bottom:1px solid var(--border);line-height:1.5}
+.fact:last-child{border:none}
+.fact strong{color:var(--t0);display:block;margin-bottom:2px}
+.leg-item{display:flex;align-items:center;gap:7px;font-size:10px;color:var(--t1);margin-bottom:5px}
+.leg-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+
+/* SVG node styles */
+.gn-idle rect{fill:#0c1219;stroke:#203650;stroke-width:1}
+.gn-idle text{fill:#3a5068}
+.gn-ok rect{fill:#0a2e1a;stroke:#00e676;stroke-width:1}
+.gn-ok text{fill:#00e676}
+.gn-flag rect{fill:#2e2000;stroke:#ffab00;stroke-width:1.5}
+.gn-flag text{fill:#ffab00}
+.gn-critical rect{fill:#2e0a0a;stroke:#ff3d3d;stroke-width:2}
+.gn-critical text{fill:#ff3d3d}
+.gn-intercept rect{fill:#002e35;stroke:#00e5ff;stroke-width:2;animation:gp 1.2s ease-in-out infinite}
+.gn-intercept text{fill:#00e5ff}
+.gn-blocked rect{fill:#1a1a00;stroke:#ffab00;stroke-width:2;stroke-dasharray:4 2}
+.gn-blocked text{fill:#ffab00}
+.gn-orange rect{fill:#2e1a0a;stroke:#ff7043;stroke-width:1.5}
+.gn-orange text{fill:#ff7043}
+@keyframes gp{0%,100%{stroke-opacity:1}50%{stroke-opacity:.3}}
+
+.ge{fill:none;stroke:#1a2d40;stroke-width:1}
+.ge-ok{fill:none;stroke:#00e676;stroke-width:1.5}
+.ge-flag{fill:none;stroke:#ffab00;stroke-width:1.5;stroke-dasharray:5 3;animation:da .8s linear infinite}
+.ge-crit{fill:none;stroke:#ff3d3d;stroke-width:2;stroke-dasharray:4 2;animation:da .5s linear infinite}
+.ge-orange{fill:none;stroke:#ff7043;stroke-width:1.5;stroke-dasharray:5 3;animation:da .9s linear infinite}
+@keyframes da{to{stroke-dashoffset:-12}}
+
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:var(--bg1)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+</style>
+</head>
+<body>
+
+<div class="case-selector">
+  <div class="case-tab active" id="tab-a" onclick="switchCase('a')">
+    <span class="case-tab-label">Simulation 02 of 03</span>
+    <span class="case-tab-title">Ariane 5 Flight 501 — ESA / CNES</span>
+    <span class="case-tab-loss loss-a">$370M LOST · 40 seconds · June 4 1996</span>
+  </div>
+  <div class="case-tab" id="tab-b" onclick="switchCase('b')">
+    <span class="case-tab-label">Simulation 03 of 03</span>
+    <span class="case-tab-title">Mars Climate Orbiter — NASA / Lockheed Martin</span>
+    <span class="case-tab-loss loss-b">$327.6M LOST · 9 months in orbit · Sept 23 1999</span>
+  </div>
+</div>
+
+<div class="shell">
+  <div class="left-panel" id="timeline-panel"></div>
+  <div class="centre" id="centre"></div>
+  <div class="right-panel" id="right-panel"></div>
+</div>
+
+<script>
+const DEFS = `<defs>
+  <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#1a2d40" stroke-width="1.5"/></marker>
+  <marker id="arr-g" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#00e676" stroke-width="1.5"/></marker>
+  <marker id="arr-a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#ffab00" stroke-width="1.5"/></marker>
+  <marker id="arr-r" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#ff3d3d" stroke-width="1.5"/></marker>
+  <marker id="arr-o" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#ff7043" stroke-width="1.5"/></marker>
+  <marker id="arr-c" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#00e5ff" stroke-width="1.5"/></marker>
+</defs>`;
+
+function node(cls, x, y, w, h, line1, line2) {
+  return `<g class="${cls}"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="6"/>
+    <text x="${x+w/2}" y="${y+(line2?h*0.38:h/2)}" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" font-weight="600" dominant-baseline="central">${line1}</text>
+    ${line2?`<text x="${x+w/2}" y="${y+h*0.68}" text-anchor="middle" font-family="IBM Plex Mono" font-size="8" dominant-baseline="central">${line2}</text>`:''}
+  </g>`;
+}
+function edge(cls, x1,y1,x2,y2,marker='arr') {
+  return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" class="${cls}" marker-end="url(#${marker})"/>`;
+}
+function path(cls, d, marker='arr') {
+  return `<path d="${d}" class="${cls}" fill="none" marker-end="url(#${marker})"/>`;
+}
+function lbl(txt, x, y, col='#3a5068', sz=9) {
+  return `<text x="${x}" y="${y}" text-anchor="middle" font-family="IBM Plex Mono" font-size="${sz}" fill="${col}">${txt}</text>`;
+}
+function svg(h, content) {
+  return `<svg width="100%" viewBox="0 0 760 ${h}">${DEFS}${content}</svg>`;
+}
+
+// ══════════════════════════════════════════════════════
+// CASE A — ARIANE 5 FLIGHT 501
+// ══════════════════════════════════════════════════════
+const CASE_A = {
+  id:'a',
+  title:'Ariane 5 Flight 501',
+  subtitle:'ESA / CNES · Kourou, French Guiana',
+  loss:'$370M',
+  organs:['Organ 2 — Flight Software (primary)','Organ 1 — Engineering (design reuse assumption)','Organ 7 — Compliance Index (no cross-vehicle validation gate)'],
+  facts:[
+    {k:'Root cause',v:'Integer overflow in reused Ariane 4 IRS software. Horizontal velocity variable BH exceeded 16-bit signed integer range — never possible on Ariane 4 trajectory, certain on Ariane 5.'},
+    {k:'Directly investigated by',v:'Independent Inquiry Board, ESA/CNES. Report published July 1996. Primary author: Prof. Jacques-Louis Lions, Académie des Sciences.'},
+    {k:'Software decision',v:'Ariane 4 navigation software reused on Ariane 5 to save cost and time. The alignment function continued running 40s post-liftoff — it served no purpose on A5 but was never deactivated.'},
+    {k:'The talent scarcity angle',v:'Insufficient expertise available to fully re-validate legacy code against the new trajectory profile. The IBR notes: "software was assumed correct until shown faulty."'},
+    {k:'Financial loss',v:'$370M direct — four Cluster science satellites destroyed. Programme delayed four years. ESA\'s credibility severely damaged.'},
+    {k:'Source',v:'ESA/CNES Independent Inquiry Board Report, July 1996. Freely available at ESA.int.'}
+  ],
+  steps:[
+    {year:'1988–1995',event:'Ariane 4 software declared for reuse on Ariane 5',sub:'IRS navigation code reused to save budget. No full revalidation against A5 trajectory profile.',badges:['b-amber','ORGAN 2'],done:false},
+    {year:'1995–1996',event:'Ariane 5 flight program validated — but IRS not included',sub:'ESA Inquiry Board: "it was decided to use simulated output of the IRS, not the real system." The overflow was undetectable in simulation.',badges:['b-red','CRITICAL GAP'],done:false},
+    {year:'Pre-launch 1996',event:'No hardware-software pairing validation for new trajectory',sub:'The VALIDATED_AGAINST relationship — does A4 IRS code cover A5 velocity envelope? Never formally asked. Never formally answered.',badges:['b-orange','ORGAN 2 GAP'],done:false},
+    {year:'June 4, 1996 — H0+37s',event:'BH variable overflows — both IRS units halt',sub:'Horizontal velocity 5× higher than A4 ever achieved. 64-bit float to 16-bit integer overflow. Both primary and backup IRS produce diagnostic error — interpreted as flight data.',badges:['b-red','MISSION LOST'],done:false},
+    {year:'June 4, 1996 — H0+39s',event:'OBC receives diagnostic pattern as flight attitude data',sub:'Full nozzle deflection commanded. Vehicle breaks apart under aerodynamic stress. Self-destruct triggered. $370M in 40 seconds.',badges:['b-red','$370M LOST'],done:false},
+    {year:'Caelnex counterfactual',event:'How Caelnex prevents Flight 501',sub:'Organ 2 VALIDATED_AGAINST constraint blocks flight clearance. Reused build flagged against new vehicle trajectory envelope. Overflow detectable pre-launch.',badges:['b-green','PREVENTED'],done:false},
+  ],
+  graphs:[
+    // Step 1 graph
+    svg(240,
+      node('gn-ok',20,80,130,52,'A4-IRS-BUILD','Ariane 4 code') +
+      edge('ge-ok',150,106,200,106,'arr-g') +
+      node('gn-flag',200,80,140,52,'REUSE-DECISION','No revalidation') +
+      edge('ge-flag',340,106,390,106,'arr-a') +
+      node('gn-flag',390,80,160,52,'A5-PROGRAMME','New trajectory') +
+      edge('ge',550,106,600,106,'arr') +
+      node('gn-idle',600,80,140,52,'VALIDATED_AGAINST','Node missing') +
+      lbl('In Caelnex: reusing a build on a new vehicle requires a VALIDATED_AGAINST node pair.',380,185,'#3a5068',9) +
+      lbl('The A4 IRS build node has no VALIDATED_AGAINST edge to A5 trajectory envelope.',380,200,'#ffab00',9)
+    ),
+    // Step 2 graph
+    svg(260,
+      node('gn-critical',20,70,140,52,'IRS-SIM','Simulated output only') +
+      edge('ge-crit',160,96,210,96,'arr-r') +
+      node('gn-critical',210,70,150,52,'INTEGRATION-TEST','IRS excluded') +
+      edge('ge-crit',360,96,410,96,'arr-r') +
+      node('gn-critical',410,70,160,52,'VALIDATION-GAP','Overflow undetectable') +
+      edge('ge-crit',570,96,620,96,'arr-r') +
+      node('gn-critical',620,70,120,52,'FLIGHT-CLEAR','Incorrect GO') +
+      lbl('Organ 7 intercept in Caelnex:',380,178,'#00e5ff',9) +
+      lbl('"BuildNode A4-IRS-V2.6 has no simulation coverage for A5 trajectory BH range."',380,193,'#00e5ff',9) +
+      lbl('"VALIDATED_AGAINST check: FAIL — submit blocked until full trajectory envelope tested."',380,208,'#ffab00',9)
+    ),
+    // Step 3 graph
+    svg(280,
+      node('gn-idle',20,60,130,52,'A5-VEHICLE','New trajectory') +
+      edge('ge',150,86,200,86,'arr') +
+      node('gn-idle',200,60,140,52,'IRS-PAIR-REQ','Pairing node') +
+      edge('ge-flag',340,86,390,86,'arr-a') +
+      node('gn-flag',390,60,150,52,'A4-IRS-BUILD','No A5 validation') +
+      lbl('Caelnex Organ 2 — the VALIDATED_AGAINST constraint:',380,165,'#00e5ff',9) +
+      lbl('A5-VEHICLE hardware config node → VALIDATED_AGAINST → A4-IRS-BUILD',380,180,'#00e5ff',9) +
+      lbl('System query: "Does A4-IRS-BUILD cover A5 max horizontal velocity 2,300 m/s?"',380,195,'#3a5068',9) +
+      lbl('A4 max: 435 m/s. A5 actual: ~2,300 m/s. Gap: 5.3×. Result: VALIDATION BLOCKED.',380,212,'#ff3d3d',10)
+    ),
+    // Step 4+5 graph — reality vs caelnex
+    svg(310,
+      lbl('REALITY — no Caelnex',190,24,'#7f1d1d',9) +
+      node('gn-ok',20,34,100,48,'A4-CODE','Trusted') +
+      edge('ge-crit',120,58,170,58,'arr-r') +
+      node('gn-critical',170,34,110,48,'BH OVERFLOW','H0+37s') +
+      edge('ge-crit',280,58,330,58,'arr-r') +
+      node('gn-critical',330,34,120,48,'IRS HALT x2','Both units') +
+      edge('ge-crit',450,58,500,58,'arr-r') +
+      node('gn-critical',500,34,130,48,'OBC MISREAD','Diagnostic=cmd') +
+      edge('ge-crit',630,58,680,58,'arr-r') +
+      node('gn-critical',680,34,60,48,'LOST','$370M') +
+
+      lbl('CAELNEX TIMELINE — intercepted pre-launch',190,128,'#00e676',9) +
+      node('gn-flag',20,138,120,48,'A4-IRS-BUILD','Flagged') +
+      edge('ge-flag',140,162,190,162,'arr-a') +
+      node('gn-intercept',190,138,130,48,'ORGAN 2 GATE','Pairing check') +
+      edge('ge-ok',320,162,370,162,'arr-g') +
+      node('gn-blocked',370,138,140,48,'FLIGHT BLOCKED','Retest required') +
+      edge('ge-ok',510,162,560,162,'arr-g') +
+      node('gn-ok',560,138,130,48,'A5 VALIDATION','Full test done') +
+      edge('ge-ok',690,162,730,162,'arr-g') +
+      node('gn-ok',730,138,40,48,'GO','✓') +
+      lbl('Result: Flight 501 proceeds with validated IRS. Four Cluster satellites reach orbit. $370M preserved.',380,238,'#00e676',9)
+    ),
+    // Step 5 — same as 4
+    svg(280,
+      node('gn-critical',20,50,120,52,'ARIANE 5','H0+37s') +
+      edge('ge-crit',140,76,190,76,'arr-r') +
+      node('gn-critical',190,50,130,52,'BH OVERFLOW','Integer 16-bit') +
+      edge('ge-crit',320,76,370,76,'arr-r') +
+      node('gn-critical',370,50,130,52,'BOTH IRS HALT','Redundancy void') +
+      edge('ge-crit',500,76,550,76,'arr-r') +
+      node('gn-critical',550,50,130,52,'SELF-DESTRUCT','H0+39s') +
+      lbl('The redundant backup IRS ran IDENTICAL software — the overflow hit both simultaneously.',380,160,'#ff3d3d',9) +
+      lbl('In Caelnex: the VALIDATED_AGAINST constraint applies to ALL build nodes on ALL IRS units.',380,175,'#00e5ff',9) +
+      lbl('You cannot clear one IRS and leave an unvalidated backup. Both must pass. Both are blocked.',380,190,'#ffab00',9)
+    ),
+    // Step 6 — full counterfactual
+    svg(310,
+      node('gn-flag',20,40,120,52,'A4-IRS-BUILD','Flagged on entry') +
+      edge('ge-flag',140,66,190,66,'arr-a') +
+      node('gn-intercept',190,40,130,52,'ORGAN 2','VALIDATED_AGAINST') +
+      edge('ge-flag',320,66,370,66,'arr-a') +
+      node('gn-blocked',370,40,140,52,'A5 FLIGHT BLOCK','Pending full test') +
+
+      node('gn-ok',190,160,140,52,'FULL SIM RUN','A5 trajectory env.') +
+      edge('ge-ok',190,112,260,160,'arr-g') +
+      node('gn-critical',370,160,130,52,'OVERFLOW FOUND','BH range exceeded') +
+      edge('ge-ok',330,186,370,186,'arr-g') +
+      node('gn-ok',560,40,120,52,'CODE FIXED','BH protected') +
+      edge('ge-ok',500,160,620,66,'arr-g') +
+      node('gn-ok',560,160,120,52,'A5 VALIDATED','New build paired') +
+      edge('ge-ok',680,66,720,66,'arr-g') +
+      node('gn-ok',720,40,40,52,'GO','✓') +
+
+      lbl('Caelnex outcome: overflow detected in simulation before launch. Fix applied. All four Cluster satellites delivered.',380,262,'#00e676',10) +
+      lbl('$370M preserved. European space programme not delayed by four years. Source: ESA/CNES IBR 1996.',380,278,'#3a5068',9)
+    )
+  ],
+  interventions:[
+    {t:'flag',l:'Organ 2 — Flight Software: VALIDATED_AGAINST node missing on reuse',b:'In Caelnex, when A4-IRS-BUILD is proposed for reuse on A5-VEHICLE, the system immediately queries: does a VALIDATED_AGAINST edge exist connecting this build to the A5 trajectory envelope node? It does not exist. <strong>The build cannot enter the integration workflow until this node is created and verified.</strong> That one structural check is the entire intervention.'},
+    {t:'blocked',l:'Organ 7 — Integration test did not include real IRS simulation — flag raised',b:'The Inquiry Board found: <strong>"it was decided to use the simulated output of the IRS, not the real system."</strong> In Caelnex, the integration test plan node for A5 must list every sub-system included in validation. When the IRS appears on the vehicle manifest but not in the test plan coverage graph, Organ 7 raises a gap flag. The test plan cannot be signed off with an uncovered critical sub-system.'},
+    {t:'intercept',l:'Organ 2 — Caelnex computes trajectory envelope coverage before flight clearance',b:'The VALIDATED_AGAINST constraint in Caelnex is not a checkbox. It is a computed property. When the flight clearance node is created for A5 Flight 501, the system queries: what is the maximum horizontal velocity this vehicle will achieve? (A5: ~2,300 m/s). What is the maximum BH value the validated IRS can handle without overflow? (A4 ceiling: ~435 m/s). <strong>The constraint fails. The flight clearance node cannot be set to GO. The launch does not happen until this is resolved.</strong>'},
+    {t:'prevented',l:'Both IRS units fail simultaneously — Caelnex blocked this from occurring',b:'The most devastating aspect of the A5 failure was that the redundant backup IRS ran identical software — so both units overflowed simultaneously, making the redundancy completely void. In Caelnex, <strong>all IRS unit BuildNodes must individually satisfy the VALIDATED_AGAINST constraint.</strong> You cannot mark the primary as validated and leave the backup unvalidated. Both must pass. The redundancy assumption is architectural, not procedural.'},
+    {t:'prevented',l:'H0+39s — self-destruct. In Caelnex: this moment never arrives',b:'The vehicle self-destructs 39 seconds after liftoff. $370M in 40 seconds. The Inquiry Board\'s conclusion: <strong>"the failure was due to a design error in the software of the inertial reference system — software that had not been tested in the real environment of Ariane 5."</strong> In Caelnex, that sentence is structurally impossible to write in a post-mortem report, because the VALIDATED_AGAINST constraint prevents an untested build from ever reaching the launch pad.'},
+    {t:'prevented',l:'Complete counterfactual — $370M preserved, four Cluster satellites delivered',b:'The Caelnex intervention chain: (1) A4-IRS reuse flagged — VALIDATED_AGAINST node required. (2) Full trajectory simulation run with real IRS. (3) Overflow in BH variable detected pre-launch. (4) Fix applied — BH protected against overflow. (5) New build validated against full A5 envelope. (6) VALIDATED_AGAINST node created. (7) Flight 501 proceeds. Four Cluster satellites reach orbit. European space programme not delayed by four years. <strong>Sources: ESA/CNES Independent Inquiry Board Report, July 1996.</strong>'}
+  ],
+  comparisons:[null,null,null,
+    {without:['A4 IRS code reused with no trajectory revalidation','BH overflow in both IRS units — H0+37s','Diagnostic error output interpreted as flight data','Full nozzle deflection — vehicle breaks up','Self-destruct H0+39s — $370M lost','Programme delayed 4 years'],
+     with:['VALIDATED_AGAINST constraint: A4-IRS vs A5 envelope — FAIL','Trajectory simulation with real IRS forced by Organ 2 gate','BH overflow detected in simulation before launch','Code fixed — BH variable protected against overflow','All IRS units re-validated with new build','Flight 501 proceeds — four Cluster satellites delivered']},
+    null,
+    {without:['$370M direct loss in 40 seconds','Four Cluster science satellites destroyed','ESA credibility damaged — Ariane 5 not trusted until 2007','Programme delayed four years','Root cause: untested software reuse'],
+     with:['$370M preserved','Four Cluster science satellites delivered','European space programme on schedule','Overflow found in simulation — not in flight','VALIDATED_AGAINST constraint: the single gate that changes everything']}
+  ]
+};
+
+// ══════════════════════════════════════════════════════
+// CASE B — MARS CLIMATE ORBITER
+// ══════════════════════════════════════════════════════
+const CASE_B = {
+  id:'b',
+  title:'Mars Climate Orbiter',
+  subtitle:'NASA JPL / Lockheed Martin Astronautics · Colorado ↔ Pasadena',
+  loss:'$327.6M',
+  organs:['Organ 1 — Engineering (interface spec — units undefined)','Organ 2 — Flight Software (no cross-team build validation)','Organ 7 — Compliance Index (informal anomaly reports never escalated)','Organ 5 — Launch Ops (navigation discrepancies not resolved before MOI)'],
+  facts:[
+    {k:'Root cause (NASA MIB)',v:'"The failure to use metric units in the coding of a ground software file — SM_FORCES — used in trajectory models. Thruster performance data in English units (pound-force seconds) instead of metric (newton-seconds)."'},
+    {k:'Investigated by',v:'NASA Mishap Investigation Board (MIB). Phase I Report: November 10, 1999. Chairman: Arthur Stephenson, Marshall Space Flight Center.'},
+    {k:'The multi-site gap',v:'Lockheed Martin (Colorado) built and operated the spacecraft in imperial units. JPL (California) navigated in metric. The interface document did not specify units. Nobody checked.'},
+    {k:'The talent scarcity angle',v:'MIB finding: "the small navigation team was oversubscribed and its work did not receive peer review by independent experts." A team under-resourced cannot catch its own assumptions.'},
+    {k:'Warning signs ignored',v:'MIB: "Throughout spring and summer of 1999, concerns existed at the working level regarding discrepancies in navigation solutions — but only informally reported." Six months of signals. No escalation. No formal flag.'},
+    {k:'Financial loss',v:'$327.6M total mission cost. Additionally, MCO was relay for Mars Polar Lander — which also failed three months later, adding further losses.'},
+    {k:'Source',v:'NASA MCO Mishap Investigation Board Phase I Report, Nov. 10, 1999. Available at NASA LLIS.'}
+  ],
+  steps:[
+    {year:'1994–1998',event:'Interface specification written — units field left undefined',sub:'SM_FORCES software spec requires output data. Units not stated. Lockheed Martin engineers write in lbf·s. JPL navigation team assumes N·s. The gap is created silently.',badges:['b-purple','ORGAN 1 GAP'],done:false},
+    {year:'Dec 1998',event:'MCO launches — unit mismatch travels to Mars',sub:'The AMD file output by SM_FORCES carries impulse values in lbf·s. Every navigation correction burn is 4.45× too small. The spacecraft drifts — slowly, invisibly, over nine months.',badges:['b-orange','9 MONTHS DRIFTING'],done:false},
+    {year:'Spring–Summer 1999',event:'Working-level engineers notice navigation discrepancies',sub:'MIB confirmed: residuals between expected and observed Doppler signature noted for months. Only informally reported. Never formally escalated. The talent-scarce navigation team is oversubscribed.',badges:['b-red','6 MONTHS IGNORED'],done:false},
+    {year:'September 8, 1999',event:'TCM-4 computed — insertion altitude already dangerously low',sub:'Final trajectory correction. Doppler-only solutions consistently show flight path too close. Discrepancies not resolved. Mission operations team not fully informed of spacecraft attitude heritage.',badges:['b-red','CRITICAL — UNRESOLVED'],done:false},
+    {year:'September 23, 1999',event:'Mars Orbit Insertion — MCO enters atmosphere at 57km, not 150km',sub:'MCO burns up or is lost. $327.6M gone. MCO was also relay for Mars Polar Lander — which fails three months later. Combined loss exceeds $492M.',badges:['b-red','MISSION LOST'],done:false},
+    {year:'Caelnex counterfactual',event:'How Caelnex prevents the MCO loss',sub:'Organ 1 interface spec enforcement, Organ 7 informal-to-formal escalation, Organ 5 navigation discrepancy flag — three separate interception points across nine months.',badges:['b-green','THREE INTERCEPTS'],done:false},
+  ],
+  graphs:[
+    // Step 1 — interface spec gap
+    svg(270,
+      node('gn-critical',20,60,150,52,'SM_FORCES SPEC','Units: UNDEFINED') +
+      edge('ge-crit',170,86,220,86,'arr-r') +
+      node('gn-critical',220,60,140,52,'LMT OUTPUT','lbf·s (imperial)') +
+      edge('ge-crit',360,86,410,86,'arr-r') +
+      node('gn-critical',410,60,140,52,'JPL READS AS','N·s (metric)') +
+      edge('ge-crit',550,86,600,86,'arr-r') +
+      node('gn-critical',600,60,140,52,'ERROR FACTOR','×4.45 per burn') +
+
+      lbl('Caelnex Organ 1 — interface spec enforcement:',380,172,'#00e5ff',9) +
+      lbl('"SpecificationNode SM_FORCES-OUTPUT has no unit property defined."',380,188,'#ff7043',9) +
+      lbl('"Organ 7: document cannot be marked complete with undefined unit field."',380,204,'#00e5ff',9) +
+      lbl('"BLOCKED: SM_FORCES interface document requires unit specification before sign-off."',380,220,'#00e676',9)
+    ),
+    // Step 2 — drift accumulation
+    svg(280,
+      node('gn-critical',20,60,110,52,'LAUNCH','Dec 11 1998') +
+      edge('ge-orange',130,86,180,86,'arr-o') +
+      node('gn-orange',180,60,120,52,'BURN 1','×4.45 error') +
+      edge('ge-orange',300,86,350,86,'arr-o') +
+      node('gn-orange',350,60,120,52,'BURN 2','Error compounds') +
+      edge('ge-orange',470,86,520,86,'arr-o') +
+      node('gn-orange',520,60,120,52,'BURN 3-4','9mo of drift') +
+      edge('ge-crit',640,86,690,86,'arr-r') +
+      node('gn-critical',690,60,60,52,'MOI','57km') +
+
+      lbl('In Caelnex: every trajectory correction burn produces a NavBurnNode with unit metadata.',380,170,'#3a5068',9) +
+      lbl('The NavBurnNode carries: expected delta-V, actual delta-V, unit system used, source software.',380,186,'#3a5068',9) +
+      lbl('Cross-team unit consistency check runs on every burn. Mismatch flagged after Burn 1.',380,202,'#00e5ff',9) +
+      lbl('The drift is caught after the first correction burn — not after nine months.',380,218,'#00e676',9)
+    ),
+    // Step 3 — informal reports not escalated
+    svg(290,
+      node('gn-flag',20,60,160,52,'NAV DISCREPANCY','Working-level flag') +
+      edge('ge-flag',180,86,230,86,'arr-a') +
+      node('gn-idle',230,60,130,52,'INFORMAL NOTE','Verbal / email') +
+      edge('ge',360,86,410,86,'arr') +
+      node('gn-idle',410,60,150,52,'OVERSUBSCRIBED','No peer review') +
+      edge('ge-crit',560,86,610,86,'arr-r') +
+      node('gn-critical',610,60,130,52,'NEVER ESCALATED','6 months lost') +
+
+      lbl('Caelnex Organ 7 — activity zone monitor:',380,172,'#00e5ff',9) +
+      lbl('"Navigation anomaly flag was logged informally on May 14, 1999."',380,188,'#ffab00',9) +
+      lbl('"Expected escalation to formal AnomalyNode within 72 hours — not completed."',380,204,'#ffab00',9) +
+      lbl('"Organ 7: informal flag promotion overdue. Escalation path blocked. Flag raised to Mission Director."',380,220,'#00e676',9)
+    ),
+    // Step 4 — TCM-4 unresolved
+    svg(290,
+      node('gn-critical',20,60,130,52,'TCM-4 COMPUTED','Sept 8 1999') +
+      edge('ge-crit',150,86,200,86,'arr-r') +
+      node('gn-critical',200,60,140,52,'DOPPLER GAP','Consistently low') +
+      edge('ge-crit',340,86,390,86,'arr-r') +
+      node('gn-critical',390,60,160,52,'NOT RESOLVED','Mission ops not told') +
+      edge('ge-crit',550,86,600,86,'arr-r') +
+      node('gn-critical',600,60,140,52,'MOI PLANNED','Sept 23 — fatal') +
+
+      node('gn-intercept',200,170,200,52,'ORGAN 5 — READINESS','Nav discrepancy: RED') +
+      path('ge-flag','M200 112 L200 170','arr-a') +
+      path('ge-flag','M300 196 L520 196 L520 112 L550 86','arr-r') +
+
+      lbl('Organ 5 readiness board: navigation solution consistency is a scored readiness item.',380,260,'#00e5ff',9) +
+      lbl('"3 consecutive navigation solutions show altitude below minimum survivable — GO/NO-GO blocked."',380,276,'#ff3d3d',9)
+    ),
+    // Step 5 — loss
+    svg(310,
+      lbl('REALITY — no Caelnex',200,22,'#7f1d1d',9) +
+      node('gn-critical',20,32,110,48,'UNIT GAP','lbf vs N·s') +
+      edge('ge-crit',130,56,180,56,'arr-r') +
+      node('gn-critical',180,32,110,48,'9MO DRIFT','Uncorrected') +
+      edge('ge-crit',290,56,340,56,'arr-r') +
+      node('gn-critical',340,32,120,48,'SIGNALS IGNORED','Not escalated') +
+      edge('ge-crit',460,56,510,56,'arr-r') +
+      node('gn-critical',510,32,110,48,'MOI 57km','Below survival') +
+      edge('ge-crit',620,56,670,56,'arr-r') +
+      node('gn-critical',670,32,80,48,'$327M LOST','Burned up') +
+
+      lbl('CAELNEX — 3 intercept points across 9 months',240,120,'#00e676',9) +
+      node('gn-intercept',20,132,130,48,'ORGAN 1','Unit spec blocked') +
+      edge('ge-ok',150,156,200,156,'arr-g') +
+      node('gn-ok',200,132,130,48,'UNIT DEFINED','N·s enforced') +
+      edge('ge-ok',330,156,380,156,'arr-g') +
+      node('gn-ok',380,132,130,48,'BURNS CORRECT','No drift') +
+      edge('ge-ok',510,156,560,156,'arr-g') +
+      node('gn-ok',560,132,120,48,'MOI 226km','Correct altitude') +
+      edge('ge-ok',680,156,720,156,'arr-g') +
+      node('gn-ok',720,132,40,48,'MCO','Orbit ✓') +
+
+      lbl('Even if Organ 1 missed it: Organ 7 escalates informal nav flag → Organ 5 blocks MOI GO.',380,232,'#00e5ff',9) +
+      lbl('Three independent gates. Any one of them stops the loss. Caelnex provides all three.',380,248,'#00e676',9)
+    ),
+    // Step 6 — full counterfactual
+    svg(320,
+      node('gn-intercept',20,40,140,52,'ORGAN 1','Unit spec gate') +
+      edge('ge-ok',160,66,210,66,'arr-g') +
+      node('gn-ok',210,40,140,52,'SM_FORCES SPEC','N·s defined') +
+      edge('ge-ok',350,66,400,66,'arr-g') +
+      node('gn-ok',400,40,130,52,'ALL BURNS','Correct units') +
+      edge('ge-ok',530,66,580,66,'arr-g') +
+      node('gn-ok',580,40,120,52,'MCO','Orbit achieved') +
+
+      node('gn-intercept',20,160,140,52,'ORGAN 7','Informal→formal') +
+      node('gn-ok',210,160,140,52,'ANOMALY NODE','Formally logged') +
+      node('gn-ok',400,160,130,52,'ROOT CAUSE','Unit mismatch') +
+      path('ge-ok','M160 186 L210 186','arr-g') +
+      path('ge-ok','M350 186 L400 186','arr-g') +
+
+      node('gn-intercept',20,260,140,52,'ORGAN 5','Nav discrepancy') +
+      node('gn-ok',210,260,140,52,'GO BLOCKED','Until resolved') +
+      node('gn-ok',400,260,130,52,'CORRECTION','Applied pre-MOI') +
+      path('ge-ok','M160 286 L210 286','arr-g') +
+      path('ge-ok','M350 286 L400 286','arr-g') +
+
+      lbl('$327.6M preserved. Mars Climate Orbiter achieves orbit. Acts as planned relay for Mars Polar Lander.',380,308,'#00e676',10)
+    )
+  ],
+  interventions:[
+    {t:'intercept',l:'Organ 1 — interface specification: unit field undefined, document blocked',b:'In Caelnex, the SM_FORCES interface specification is a SpecificationNode with mandatory properties: parameter name, data type, unit system, and acceptable range. A specification document that leaves the unit field empty cannot be signed off. <strong>The unit omission is caught the day the document is written — December 1994 — not September 1999.</strong> Five years of silent accumulation stop at the first line of the spec.'},
+    {t:'flag',l:'Organ 2 — cross-team build validation: unit consistency across software components',b:'In Caelnex, when SM_FORCES (Lockheed Martin, Colorado) outputs to the AMD file which is consumed by JPL navigation software, both components are nodes in the graph with a DATA_INTERFACE edge. That edge carries a unit-system property. <strong>When LMT registers SM_FORCES output in lbf·s and JPL registers AMD input as N·s, the unit mismatch appears as a DATA_INTERFACE conflict immediately.</strong> The nine-month drift never begins.'},
+    {t:'intercept',l:'Organ 7 — informal navigation anomaly not escalated: Organ 7 forces promotion',b:'The MIB found that working-level navigation engineers noticed the Doppler discrepancies in spring 1999 but only reported informally. In Caelnex, any anomaly flag — even a casual note in the campaign system — starts a 72-hour escalation clock. If the flag is not formally converted to an AnomalyNode and assigned to an owner within 72 hours, <strong>Organ 7 automatically promotes it and notifies the mission director.</strong> Six months of ignored signals become a formal open item on the readiness board within three days.'},
+    {t:'blocked',l:'Organ 5 — TCM-4 navigation discrepancy blocks MOI go/no-go',b:'The MIB found that on September 8, 1999, Doppler-only solutions consistently showed insertion altitude dangerously low — and this was not resolved before the MOI maneuver 15 days later. In Caelnex, navigation solution consistency is a scored component of the mission readiness board. <strong>Three consecutive navigation solutions showing altitude below minimum survivable threshold produce a RED flag that locks the GO vote for Mars Orbit Insertion.</strong> The MOI cannot be executed while this flag is open.'},
+    {t:'prevented',l:'MCO lost September 23, 1999 — in Caelnex, this date is an orbit insertion success',b:'The spacecraft enters Mars atmosphere at 57km — below the 80km minimum survivable altitude — and is destroyed. The MIB chairman stated: <strong>"The problem here was not the error; it was the failure of NASA\'s systems engineering, and the checks and balances in our processes, to detect the error."</strong> Caelnex is that systems engineering. Three independent gates — Organ 1 at spec creation, Organ 7 at anomaly escalation, Organ 5 at MOI readiness — any one of which would have stopped this loss.'},
+    {t:'prevented',l:'Complete counterfactual — $327.6M preserved, MCO achieves Mars orbit',b:'The Caelnex intervention chain: (1) Organ 1 blocks SM_FORCES spec until unit field defined — N·s enforced across both teams. (2) Organ 2 DATA_INTERFACE edge flags unit mismatch on first software integration test. (3) Organ 7 promotes informal nav flag to formal AnomalyNode within 72 hours of first observation. (4) Organ 5 blocks MOI GO while navigation discrepancy is open. Any one of these four gates stops the loss. All four are structural — not dependent on any individual engineer noticing anything. <strong>Sources: NASA MCO Mishap Investigation Board Phase I Report, November 10, 1999.</strong>'}
+  ],
+  comparisons:[
+    null,null,
+    {without:['Navigation anomaly noticed spring 1999 — only verbally noted','Oversubscribed navigation team — no peer review','Never formally escalated to mission management','No formal anomaly record exists','Six months pass — drift compounds to fatal trajectory'],
+     with:['Organ 7 informal flag promotion: 72-hour escalation clock','AnomalyNode created — owner assigned — mission director notified','Root cause investigation begins spring 1999','Unit mismatch discovered — 4 months before MOI','Correction applied — MCO trajectory corrected before Mars arrival']},
+    {without:['TCM-4 shows dangerously low insertion altitude','Doppler-only solutions consistently anomalous','Discrepancies "not resolved" per MIB','Operations team "not fully informed"','MOI proceeds — MCO destroyed'],
+     with:['Organ 5 readiness board: nav consistency = RED','GO vote for MOI locked until discrepancy resolved','Mission director formally briefed — formal resolution required','Correction burn authorised and executed','MCO enters correct orbit at 226km altitude']},
+    null,
+    {without:['$327.6M total mission cost — total loss','MCO relay function for Mars Polar Lander also lost','MIB: failure of systems engineering checks and balances','Unit mismatch propagated for 9 months undetected','Informal warnings existed — system had no escalation path'],
+     with:['$327.6M preserved — MCO achieves planned Mars orbit','MCO relay available for Mars Polar Lander mission','Four independent Caelnex gates — any one sufficient','Unit mismatch caught at spec creation — December 1994','Organ 7 ensures no informal warning goes unescalated']}
+  ]
+};
+
+// ══════════════════════
+// RENDER ENGINE
+// ══════════════════════
+let currentCase = CASE_A;
+let currentStep = 0;
+
+function switchCase(id) {
+  currentCase = id==='a'?CASE_A:CASE_B;
+  currentStep = 0;
+  document.getElementById('tab-a').classList.toggle('active',id==='a');
+  document.getElementById('tab-b').classList.toggle('active',id==='b');
+  renderAll();
+}
+
+function goTo(n) {
+  currentStep = n;
+  renderMain();
+  renderTimeline();
+}
+
+function renderAll() {
+  renderTimeline();
+  renderMain();
+  renderRight();
+}
+
+function renderTimeline() {
+  const c = currentCase;
+  let html = `<div class="tl-wrap"><div class="tl-title">${c.title} — Timeline</div>`;
+  c.steps.forEach((s,i) => {
+    const cls = i===currentStep?'active':i<currentStep?'done':'';
+    const flagClass = s.badges[0].includes('red')?'warn':'';
+    html += `<div class="tl-step ${cls} ${flagClass}" onclick="goTo(${i})">
+      <div class="tl-year">${s.year}</div>
+      <div class="tl-event">${s.event}</div>
+      <div class="tl-sub">${s.sub}</div>
+      <span class="badge ${s.badges[0]}">${s.badges[1]}</span>
+    </div>`;
+  });
+  html += '</div>';
+  document.getElementById('timeline-panel').innerHTML = html;
+}
+
+function renderMain() {
+  const c = currentCase;
+  const s = c.steps[currentStep];
+  const pct = Math.round(((currentStep+1)/c.steps.length)*100);
+  const iv = c.interventions[currentStep];
+  const cmp = c.comparisons[currentStep];
+
+  let html = `<div class="step-hdr">
+    <div class="step-num">Step ${String(currentStep+1).padStart(2,'0')} / ${c.steps.length} &nbsp;·&nbsp; ${s.year}</div>
+    <div class="step-title">${s.event}</div>
+    <div class="step-desc">${s.sub}</div>
+  </div>
+  <div class="controls">
+    <button class="btn" onclick="goTo(${Math.max(0,currentStep-1)})" ${currentStep===0?'disabled':''}>← Prev</button>
+    <button class="btn primary" onclick="goTo(${Math.min(c.steps.length-1,currentStep+1)})" ${currentStep===c.steps.length-1?'disabled':''}>Next →</button>
+    <div class="progress-wrap"><div class="progress-fill" style="width:${pct}%"></div></div>
+    <span style="font-size:10px;color:var(--t2)">${pct}%</span>
+  </div>
+  <div class="graph-wrap">
+    <div class="graph-bar"><strong>Caelnex configuration graph — node state</strong><span>${s.year}</span></div>
+    <div style="padding:8px;overflow:hidden">${c.graphs[currentStep]}</div>
+  </div>`;
+
+  if(iv) html += `<div class="ivn ${iv.t}"><div class="ivn-lbl ${iv.t}">${iv.l}</div><div class="ivn-body">${iv.b}</div></div>`;
+  if(cmp) html += `<div class="cmp">
+    <div class="cmp-card without"><div class="cmp-ttl">Without Caelnex — reality</div>${cmp.without.map(i=>`<div class="cmp-item">${i}</div>`).join('')}</div>
+    <div class="cmp-card with"><div class="cmp-ttl">With Caelnex — prevented</div>${cmp.with.map(i=>`<div class="cmp-item">${i}</div>`).join('')}</div>
+  </div>`;
+
+  document.getElementById('centre').innerHTML = html;
+  document.getElementById('organ-list').innerHTML = currentCase.organs.map(o=>`<div style="padding:3px 0;border-bottom:1px solid var(--border);color:var(--green);font-size:10px">${o}</div>`).join('');
+}
+
+function renderRight() {
+  const c = currentCase;
+  let html = `<div class="rp-sec"><div class="rp-ttl">Case facts</div>`;
+  c.facts.forEach(f => html += `<div class="fact"><strong>${f.k}</strong>${f.v}</div>`);
+  html += `</div>
+  <div class="rp-sec"><div class="rp-ttl">Organs activated</div><div id="organ-list"></div></div>
+  <div class="rp-sec"><div class="rp-ttl">Node legend</div>
+    ${[['#203650','Idle'],['#0a2e1a','Verified / OK'],['#2e2000','Flagged'],['#2e0a0a','Critical / lost'],['#002e35','Intercepted by Caelnex'],['#1a1a00','Blocked — awaiting action'],['#2e1a0a','Orange — warning state']].map(([bg,lbl])=>`<div class="leg-item"><div class="leg-dot" style="background:${bg};border:1px solid rgba(255,255,255,.15)"></div>${lbl}</div>`).join('')}
+  </div>`;
+  document.getElementById('right-panel').innerHTML = html;
+}
+
+switchCase('a');
+</script>
+</body>
+</html>
