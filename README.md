@@ -1,6 +1,7 @@
 # CAELNEX - Mission Continuity Platform
 
-> *The nervous system of a launch organisation. Graph-native. Debt-free. Built to last from the first launch pad on Earth to the first habitat on Mars.*
+> *The nervous system of a launch organisation. Graph-native. Debt-free. Built to last from the first launch pad on Earth to the first habitat on Mars.
+>  A graph-driven industrial edge AI system with human-defined control logic and local autonomy*
 
 **Live demo →** `yourusername.github.io/caelnex-demo`
 
