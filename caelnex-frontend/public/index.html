@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Caelnex — Mission Continuity Platform</title>
+<meta name="description" content="Caelnex is a graph-native configuration and compliance system for launch organisations — built to make sure no decision arrives with zero time left to make it.">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --paper:#F7F6F2;
+  --paper-warm:#F1EFE9;
+  --ink:#16191C;
+  --ink-soft:#4A5258;
+  --rule:#D8D5CC;
+  --teal:#0A6E6E;
+  --teal-soft:#E4EFEE;
+  --green:#1F7A4D;
+  --amber:#B5790A;
+  --red:#A8341F;
+  --serif: 'Inter', sans-serif;
+  --mono: 'IBM Plex Mono', monospace;
+}
+html{scroll-behavior:smooth}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--serif);
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ── NODE TRACE — signature element ── */
+.trace{
+  position:fixed; inset:0; pointer-events:none; z-index:1;
+  opacity:0;
+}
+.trace.active{opacity:1; transition:opacity .3s}
+.trace-line{
+  stroke:var(--teal); stroke-width:1; fill:none; opacity:.35;
+  stroke-dasharray:4 4;
+}
+.trace-dot{ fill:var(--teal); opacity:.5; }
+
+/* ── HEADER ── */
+header{
+  position:sticky; top:0; z-index:50;
+  background:rgba(247,246,242,.92); backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--rule);
+}
+.nav{
+  max-width:1080px; margin:0 auto; padding:18px 32px;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.logo{
+  font-family:var(--mono); font-weight:600; font-size:15px;
+  letter-spacing:.18em; text-transform:uppercase;
+}
+.nav-links{display:flex; gap:32px; font-size:13px}
+.nav-links a{color:var(--ink-soft); text-decoration:none; transition:color .15s}
+.nav-links a:hover{color:var(--teal)}
+
+/* ── HERO ── */
+.hero{
+  max-width:1080px; margin:0 auto; padding:96px 32px 64px;
+}
+.eyebrow{
+  font-family:var(--mono); font-size:11px; letter-spacing:.22em;
+  text-transform:uppercase; color:var(--teal); margin-bottom:24px;
+  display:flex; align-items:center; gap:10px;
+}
+.eyebrow::before{
+  content:''; display:inline-block; width:7px; height:7px;
+  background:var(--teal); border-radius:50%;
+}
+h1{
+  font-size:clamp(36px, 6vw, 60px); font-weight:700; line-height:1.08;
+  letter-spacing:-0.02em; max-width:880px; margin-bottom:28px;
+}
+h1 em{
+  font-style:normal; color:var(--teal);
+  text-decoration:underline; text-decoration-color:var(--rule);
+  text-decoration-thickness:2px; text-underline-offset:6px;
+}
+.lede{
+  font-size:19px; color:var(--ink-soft); max-width:620px; margin-bottom:8px;
+}
+.lede strong{color:var(--ink); font-weight:600}
+
+/* ── PRINCIPLE STRIP ── */
+.principle{
+  font-family:var(--mono); font-size:13px; color:var(--ink-soft);
+  border-left:2px solid var(--teal); padding:14px 20px;
+  margin:40px 0; max-width:620px; line-height:1.7;
+  background:var(--teal-soft);
+}
+.principle strong{color:var(--ink); font-weight:600}
+
+/* ── SECTION RHYTHM ── */
+section{max-width:1080px; margin:0 auto; padding:64px 32px}
+.section-head{margin-bottom:40px; max-width:640px}
+.eyebrow-sm{
+  font-family:var(--mono); font-size:11px; letter-spacing:.18em;
+  text-transform:uppercase; color:var(--ink-soft); margin-bottom:12px;
+}
+h2{font-size:clamp(26px,4vw,36px); font-weight:700; letter-spacing:-0.01em; margin-bottom:12px}
+.section-head p{color:var(--ink-soft); font-size:16px}
+hr{border:none; border-top:1px solid var(--rule); margin:0}
+
+/* ── ARCHITECTURE STACK (the diagram, rebuilt as HTML) ── */
+.stack{display:flex; flex-direction:column; gap:1px; border:1px solid var(--ink); }
+.stack-layer{
+  display:grid; grid-template-columns:140px 1fr;
+  border-bottom:1px solid var(--rule);
+}
+.stack-layer:last-child{border-bottom:none}
+.stack-label{
+  font-family:var(--mono); font-size:11px; font-weight:600; letter-spacing:.1em;
+  padding:20px 20px; background:var(--paper-warm); border-right:1px solid var(--rule);
+  display:flex; align-items:center;
+}
+.stack-body{padding:20px 24px}
+.stack-body h3{font-size:16px; font-weight:600; margin-bottom:6px}
+.stack-body p{font-size:14px; color:var(--ink-soft); max-width:560px}
+.stack-layer.highlight .stack-label{background:var(--teal-soft); color:var(--teal)}
+
+/* ── ORGAN GRID ── */
+.organ-grid{
+  display:grid; grid-template-columns:repeat(2,1fr); gap:1px;
+  border:1px solid var(--rule); background:var(--rule);
+}
+.organ-card{
+  background:var(--paper); padding:24px;
+  transition:background .15s;
+}
+.organ-card:hover{background:var(--paper-warm)}
+.organ-num{
+  font-family:var(--mono); font-size:13px; font-weight:600; color:var(--teal);
+  letter-spacing:.1em; margin-bottom:8px; display:block;
+}
+.organ-card h3{font-size:16px; font-weight:600; margin-bottom:6px}
+.organ-card p{font-size:13.5px; color:var(--ink-soft)}
+.organ-card.full{grid-column:span 2}
+
+/* ── EVIDENCE TABLE ── */
+.evidence{width:100%; border-collapse:collapse; font-size:14px}
+.evidence th{
+  text-align:left; font-family:var(--mono); font-size:11px; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--ink-soft); padding:12px 16px;
+  border-bottom:1px solid var(--ink); font-weight:600;
+}
+.evidence td{padding:14px 16px; border-bottom:1px solid var(--rule); vertical-align:top}
+.evidence td.loss{font-family:var(--mono); font-weight:600; white-space:nowrap}
+.evidence tr:hover td{background:var(--paper-warm)}
+
+/* ── SEVERITY LEGEND ── */
+.severity-row{display:flex; gap:12px; flex-wrap:wrap; margin-top:8px}
+.sev{
+  font-family:var(--mono); font-size:12px; padding:6px 14px; border-radius:3px;
+  border:1px solid; display:flex; align-items:center; gap:8px;
+}
+.sev::before{content:''; width:8px; height:8px; border-radius:50%}
+.sev.green{border-color:var(--green); color:var(--green)}
+.sev.green::before{background:var(--green)}
+.sev.amber{border-color:var(--amber); color:var(--amber)}
+.sev.amber::before{background:var(--amber)}
+.sev.red{border-color:var(--red); color:var(--red)}
+.sev.red::before{background:var(--red)}
+
+/* ── CONTACT / FOOTER ── */
+.contact{
+  background:var(--ink); color:var(--paper);
+}
+.contact .inner{max-width:1080px; margin:0 auto; padding:72px 32px}
+.contact h2{color:var(--paper)}
+.contact .section-head p{color:#9BA3A8}
+.contact-grid{display:grid; grid-template-columns:1fr 1fr; gap:48px; margin-top:32px}
+.contact-block{font-size:14px}
+.contact-block .label{
+  font-family:var(--mono); font-size:11px; letter-spacing:.18em;
+  text-transform:uppercase; color:#7A8388; margin-bottom:8px;
+}
+.contact-block a{color:var(--paper); text-decoration:none; border-bottom:1px solid #3A4248}
+.contact-block a:hover{border-color:var(--teal); color:var(--teal)}
+.contact-block p{color:#C5CACD; margin-top:4px}
+
+footer{
+  background:var(--ink); color:#7A8388; font-family:var(--mono); font-size:11px;
+  letter-spacing:.06em; text-align:center; padding:24px 32px;
+  border-top:1px solid #2A3238;
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 720px){
+  .nav-links{display:none}
+  .stack-layer{grid-template-columns:1fr}
+  .stack-label{border-right:none; border-bottom:1px solid var(--rule)}
+  .organ-grid{grid-template-columns:1fr}
+  .organ-card.full{grid-column:span 1}
+  .contact-grid{grid-template-columns:1fr}
+}
+
+/* ── ACCESSIBILITY ── */
+a:focus-visible, button:focus-visible{
+  outline:2px solid var(--teal); outline-offset:2px;
+}
+@media (prefers-reduced-motion: reduce){
+  html{scroll-behavior:auto}
+  .trace{display:none}
+}
+</style>
+</head>
+<body>
+
+<svg class="trace" id="trace"><line class="trace-line" id="traceLine"/><circle class="trace-dot" id="traceDot" r="3"/></svg>
+
+<header>
+  <nav class="nav">
+    <div class="logo">Caelnex</div>
+    <div class="nav-links">
+      <a href="#architecture">Architecture</a>
+      <a href="#organs">The seven organs</a>
+      <a href="#evidence">Evidence</a>
+      <a href="#contact">Contact</a>
+    </div>
+  </nav>
+</header>
+
+<div class="hero">
+  <div class="eyebrow">Phase 0 · Founding architecture</div>
+  <h1>A configuration graph that watches the <em>seams</em> between your systems.</h1>
+  <p class="lede">
+    Caelnex is a graph-native record of decisions, builds, and certifications for launch
+    organisations. It does not replace your MES, PLM, ERP, or QMS.
+    <strong>It watches the space between them</strong> — where the most expensive
+    failures in this industry's history have occurred.
+  </p>
+
+  <div class="principle">
+    <strong>Rule 0.</strong> If there is no time left for a human to make the call,
+    the system has already failed — earlier, upstream, and silently.
+    Caelnex's job is not to make decisions. It is to make sure the people
+    accountable for a decision still have time to make it.
+  </div>
+</div>
+
+<section id="architecture">
+  <div class="section-head">
+    <div class="eyebrow-sm">System architecture — five layers</div>
+    <h2>Raw telemetry never reaches the graph.</h2>
+    <p>Sensor data and the configuration graph are deliberately separated. The graph
+       stores verdicts, decisions, and relationships — never raw measurements.</p>
+  </div>
+
+  <div class="stack">
+    <div class="stack-layer">
+      <div class="stack-label">LAYER 5</div>
+      <div class="stack-body">
+        <h3>Operational outputs</h3>
+        <p>Readiness board, go/no-go poll, audit package, anomaly alerts —
+           the views people actually work from.</p>
+      </div>
+    </div>
+    <div class="stack-layer highlight">
+      <div class="stack-label">LAYER 4</div>
+      <div class="stack-body">
+        <h3>Configuration graph</h3>
+        <p>Neo4j. Stores component, specification, build, certification, and decision
+           nodes — plus the relationships between them. Forward-only status transitions.
+           Nothing is ever deleted.</p>
+      </div>
+    </div>
+    <div class="stack-layer highlight">
+      <div class="stack-label">LAYER 3</div>
+      <div class="stack-body">
+        <h3>Organ 7 — deterministic gate</h3>
+        <p>Hard-coded validation rules only. No probabilistic AI at this layer.
+           An advisory AI layer can extend warning time — it can never override
+           a pass or fail.</p>
+      </div>
+    </div>
+    <div class="stack-layer">
+      <div class="stack-label">LAYER 2</div>
+      <div class="stack-body">
+        <h3>Time-series + edge processing</h3>
+        <p>Raw sensor telemetry lives here — TimescaleDB, processed at the edge.
+           Only high-level verdicts are pushed up to the graph.</p>
+      </div>
+    </div>
+    <div class="stack-layer">
+      <div class="stack-label">LAYER 1</div>
+      <div class="stack-body">
+        <h3>Physical root of trust</h3>
+        <p>Smart torque tools, RFID-tagged components, instruments that report
+           their own readings — capture, not data entry.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr>
+
+<section id="organs">
+  <div class="section-head">
+    <div class="eyebrow-sm">Seven organs, one graph</div>
+    <h2>Each organ is a view. The graph is the truth.</h2>
+    <p>Engineering, software, manufacturing, supply chain, launch operations, and
+       compliance all read and write to the same underlying graph — with Organ 7
+       validating every change before it lands.</p>
+  </div>
+
+  <div class="organ-grid">
+    <div class="organ-card">
+      <span class="organ-num">O1</span>
+      <h3>Design &amp; Engineering</h3>
+      <p>Change propagation, revision genealogy, decision nodes that carry
+         the reasoning behind a change — not just the change itself.</p>
+    </div>
+    <div class="organ-card">
+      <span class="organ-num">O2</span>
+      <h3>Flight Software</h3>
+      <p>Every build is validated against the specific hardware configuration
+         it was tested with. A build with no validated pairing cannot fly.</p>
+    </div>
+    <div class="organ-card">
+      <span class="organ-num">O3</span>
+      <h3>Manufacturing &amp; Integration</h3>
+      <p>The digital traveller. Sequence enforcement, vehicle serial genealogy,
+         and tool-submitted values — not technician-entered ones.</p>
+    </div>
+    <div class="organ-card">
+      <span class="organ-num">O4</span>
+      <h3>Supply Chain</h3>
+      <p>Part genealogy from supplier to installation. Cross-batch certification
+         analysis that surfaces statistical patterns no single certificate shows.</p>
+    </div>
+    <div class="organ-card">
+      <span class="organ-num">O5</span>
+      <h3>Launch Operations</h3>
+      <p>A live readiness score computed from the graph itself — not assembled
+         from status meetings. Formal, attributed go/no-go votes.</p>
+    </div>
+    <div class="organ-card">
+      <span class="organ-num">O6</span>
+      <h3>Compliance &amp; Safety</h3>
+      <p>ITAR-aware classification from the moment a node is created.
+         Cryptographically chained audit trail, exportable on demand.</p>
+    </div>
+    <div class="organ-card full">
+      <span class="organ-num">O7</span>
+      <h3>Compliance Index Engine</h3>
+      <p>The pre-submission gate every other organ writes through. Five
+         deterministic rules — unit completeness, hardware pairing, tolerance
+         bounds, escalation deadlines, and certification clustering — each
+         calibrated under Rule 0 to preserve decision time, not just catch errors.</p>
+    </div>
+  </div>
+
+  <div class="severity-row">
+    <span class="sev green">Nominal</span>
+    <span class="sev amber">Watching</span>
+    <span class="sev red">Hold — human decision required</span>
+  </div>
+</section>
+
+<hr>
+
+<section id="evidence">
+  <div class="section-head">
+    <div class="eyebrow-sm">Why these rules exist</div>
+    <h2>Three documented failures. $1.4B combined.</h2>
+    <p>Every deterministic rule in Organ 7 traces to a specific, investigated
+       failure — not a hypothetical one.</p>
+  </div>
+
+  <table class="evidence">
+    <thead>
+      <tr><th>Incident</th><th>Year</th><th>Loss</th><th>Root cause</th><th>Organ 7 rule</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Mars Climate Orbiter</td>
+        <td>1999</td>
+        <td class="loss">$327.6M</td>
+        <td>Ground software output thrust in pound-force seconds; navigation
+            expected newton-seconds. Units field was effectively undefined.</td>
+        <td>O7-SPEC-001 — unit field mandatory</td>
+      </tr>
+      <tr>
+        <td>Ariane 5 Flight 501</td>
+        <td>1996</td>
+        <td class="loss">$370M</td>
+        <td>Reused Ariane 4 inertial reference software, never validated
+            against Ariane 5's trajectory profile.</td>
+        <td>O7-BUILD-001 — validated hardware pairing required</td>
+      </tr>
+      <tr>
+        <td>NASA OCO &amp; Glory (SPI fraud)</td>
+        <td>2009 / 2011</td>
+        <td class="loss">$697M</td>
+        <td>Falsified aluminium certifications clustered at the specification
+            boundary across 19 years and hundreds of batches.</td>
+        <td>O7-CERT-001 — boundary clustering detection</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<div class="contact" id="contact">
+  <div class="inner">
+    <div class="section-head">
+      <div class="eyebrow-sm" style="color:#7A8388">Get in touch</div>
+      <h2>This is Phase 0.</h2>
+      <p>The architecture, schema, and validation engine described here are in
+         active development. We're talking with launch organisations about
+         pilot deployments as a read-only observer layer — no system replacement,
+         no integration risk, no claim beyond what the data shows.</p>
+    </div>
+    <div class="contact-grid">
+      <div class="contact-block">
+        <div class="label">Enquiries</div>
+        <p><a href="mailto:contact@caelnex.com">contact@caelnex.com</a></p>
+        <p>For pilot programme discussions, technical reviews, or
+           partnership enquiries.</p>
+      </div>
+      <div class="contact-block">
+        <div class="label">Repository</div>
+        <p><a href="https://github.com/addysha/caelnex-demo" target="_blank" rel="noopener">github.com/addysha/caelnex-demo</a></p>
+        <p>Phase 0 schema, validation rules, and architecture documentation.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  CAELNEX SYSTEMS · FOUNDING TEAM CONFIDENTIAL WHERE MARKED · PHASE 0
+</footer>
+
+<script>
+// Signature element: node-trace — a thin line that connects the cursor
+// to the nearest interactive element, visualizing "graph edge" literally.
+(function(){
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  const trace = document.getElementById('trace');
+  const line = document.getElementById('traceLine');
+  const dot = document.getElementById('traceDot');
+  const targets = document.querySelectorAll('.organ-card, .stack-layer, .evidence tr, .nav-links a, .contact-block a');
+
+  let raf = null;
+
+  function nearestTarget(x, y) {
+    let best = null, bestDist = Infinity;
+    targets.forEach(el => {
+      const r = el.getBoundingClientRect();
+      if (r.width === 0) return;
+      const cx = r.left + r.width/2;
+      const cy = r.top + r.height/2;
+      const d = Math.hypot(cx - x, cy - y);
+      if (d < bestDist) { bestDist = d; best = {x: cx, y: cy, dist: d}; }
+    });
+    return best;
+  }
+
+  document.addEventListener('mousemove', (e) => {
+    if (raf) return;
+    raf = requestAnimationFrame(() => {
+      raf = null;
+      const target = nearestTarget(e.clientX, e.clientY);
+      if (target && target.dist < 220) {
+        trace.classList.add('active');
+        line.setAttribute('x1', e.clientX);
+        line.setAttribute('y1', e.clientY);
+        line.setAttribute('x2', target.x);
+        line.setAttribute('y2', target.y);
+        dot.setAttribute('cx', target.x);
+        dot.setAttribute('cy', target.y);
+      } else {
+        trace.classList.remove('active');
+      }
+    });
+  });
+
+  document.addEventListener('mouseleave', () => trace.classList.remove('active'));
+})();
+</script>
+
+</body>
+</html>

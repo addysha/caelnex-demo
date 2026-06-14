@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Caelnex — Mission Console</title>
+<meta name="robots" content="noindex, nofollow">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --paper:#F7F6F2;
+  --paper-warm:#F1EFE9;
+  --ink:#16191C;
+  --ink-soft:#4A5258;
+  --ink-faint:#8B9197;
+  --rule:#D8D5CC;
+  --teal:#0A6E6E;
+  --teal-soft:#E4EFEE;
+  --green:#1F7A4D;
+  --green-bg:#E7F2EC;
+  --amber:#B5790A;
+  --amber-bg:#FBF1E0;
+  --red:#A8341F;
+  --red-bg:#FAEAE6;
+  --serif:'Inter', sans-serif;
+  --mono:'IBM Plex Mono', monospace;
+}
+body{
+  background:var(--paper); color:var(--ink); font-family:var(--serif);
+  line-height:1.5; -webkit-font-smoothing:antialiased; min-height:100vh;
+}
+a{color:inherit}
+
+/* ════════════════════════════════════════
+   AUTH GATE
+   ════════════════════════════════════════ */
+#auth-screen{
+  min-height:100vh; display:flex; align-items:center; justify-content:center;
+  padding:24px;
+}
+.auth-card{
+  width:100%; max-width:400px; background:#fff;
+  border:1px solid var(--rule); border-radius:6px;
+  padding:40px 36px;
+}
+.auth-logo{
+  font-family:var(--mono); font-weight:600; font-size:14px;
+  letter-spacing:.18em; text-transform:uppercase; margin-bottom:6px;
+}
+.auth-sub{
+  font-size:13px; color:var(--ink-soft); margin-bottom:32px;
+  border-bottom:1px solid var(--rule); padding-bottom:24px;
+}
+.field{margin-bottom:18px}
+.field label{
+  display:block; font-family:var(--mono); font-size:11px; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--ink-soft); margin-bottom:6px;
+}
+.field input{
+  width:100%; padding:11px 12px; border:1px solid var(--rule);
+  border-radius:4px; font-family:var(--serif); font-size:14px;
+  background:var(--paper); color:var(--ink);
+}
+.field input:focus{
+  outline:none; border-color:var(--teal);
+  box-shadow:0 0 0 3px var(--teal-soft);
+}
+.auth-submit{
+  width:100%; padding:12px; border:none; border-radius:4px;
+  background:var(--ink); color:var(--paper); font-family:var(--serif);
+  font-size:14px; font-weight:600; cursor:pointer; margin-top:8px;
+  transition:background .15s;
+}
+.auth-submit:hover{background:var(--teal)}
+.auth-submit:focus-visible{outline:2px solid var(--teal); outline-offset:2px}
+.auth-meta{
+  margin-top:24px; padding-top:20px; border-top:1px solid var(--rule);
+  font-size:12px; color:var(--ink-faint); line-height:1.7;
+}
+.auth-meta .dot{
+  display:inline-block; width:6px; height:6px; border-radius:50%;
+  background:var(--green); margin-right:6px;
+}
+.auth-error{
+  font-size:12px; color:var(--red); margin-top:8px; display:none;
+}
+.auth-error.show{display:block}
+
+/* ════════════════════════════════════════
+   DASHBOARD SHELL
+   ════════════════════════════════════════ */
+#dashboard{display:none; min-height:100vh}
+#dashboard.active{display:flex; flex-direction:column}
+
+/* Top bar */
+.topbar{
+  display:flex; align-items:center; gap:20px; padding:14px 24px;
+  border-bottom:1px solid var(--rule); background:#fff;
+  position:sticky; top:0; z-index:20;
+}
+.topbar .logo{
+  font-family:var(--mono); font-weight:600; font-size:13px;
+  letter-spacing:.18em; text-transform:uppercase;
+}
+.topbar .sep{width:1px; height:18px; background:var(--rule)}
+.topbar .campaign{
+  font-family:var(--mono); font-size:12px; color:var(--ink-soft);
+}
+.topbar .spacer{flex:1}
+.topbar .session{
+  font-size:12px; color:var(--ink-soft); display:flex; align-items:center; gap:10px;
+}
+.topbar .session .role{
+  font-family:var(--mono); font-size:10px; padding:3px 8px; border-radius:3px;
+  background:var(--teal-soft); color:var(--teal); letter-spacing:.06em;
+}
+.logout-btn{
+  font-size:12px; color:var(--ink-soft); background:none; border:none;
+  cursor:pointer; text-decoration:underline; padding:0;
+}
+.logout-btn:hover{color:var(--red)}
+
+/* Layout */
+.layout{display:flex; flex:1; min-height:0}
+.sidebar{
+  width:200px; border-right:1px solid var(--rule); background:var(--paper-warm);
+  padding:20px 0; flex-shrink:0;
+}
+.nav-group{margin-bottom:24px}
+.nav-group-title{
+  font-family:var(--mono); font-size:10px; letter-spacing:.16em;
+  text-transform:uppercase; color:var(--ink-faint); padding:0 20px; margin-bottom:8px;
+}
+.nav-item{
+  display:flex; align-items:center; gap:10px; padding:8px 20px;
+  font-size:13px; color:var(--ink-soft); cursor:pointer; border-left:2px solid transparent;
+  transition:all .12s;
+}
+.nav-item:hover{background:rgba(0,0,0,.02); color:var(--ink)}
+.nav-item.active{
+  border-left-color:var(--teal); background:#fff; color:var(--ink); font-weight:600;
+}
+.nav-dot{width:7px; height:7px; border-radius:50%; flex-shrink:0}
+.nav-badge{
+  margin-left:auto; font-family:var(--mono); font-size:10px;
+  background:var(--rule); color:var(--ink-soft); padding:1px 6px; border-radius:3px;
+}
+.nav-badge.red{background:var(--red-bg); color:var(--red)}
+
+.main{flex:1; padding:28px 32px; overflow-y:auto}
+.main h1{font-size:22px; font-weight:700; margin-bottom:4px}
+.main .sub{font-size:13px; color:var(--ink-soft); margin-bottom:24px}
+
+/* Metric cards */
+.metrics{display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:28px}
+.metric{
+  background:#fff; border:1px solid var(--rule); border-radius:6px; padding:16px;
+}
+.metric .val{font-family:var(--mono); font-size:26px; font-weight:600; line-height:1}
+.metric .lbl{font-size:11px; color:var(--ink-soft); margin-top:6px; letter-spacing:.04em}
+.metric.warn .val{color:var(--amber)}
+.metric.bad .val{color:var(--red)}
+.metric.good .val{color:var(--green)}
+
+/* Severity grid */
+.severity-grid{display:grid; grid-template-columns:repeat(6,1fr); gap:8px; margin-bottom:28px}
+.sev-card{
+  border-radius:6px; padding:12px; text-align:center; border:1px solid;
+}
+.sev-card .name{font-size:11px; font-weight:600; margin-bottom:4px}
+.sev-card .status{font-family:var(--mono); font-size:10px; letter-spacing:.08em; text-transform:uppercase}
+.sev-card.green{background:var(--green-bg); border-color:var(--green); color:var(--green)}
+.sev-card.amber{background:var(--amber-bg); border-color:var(--amber); color:var(--amber)}
+.sev-card.red{background:var(--red-bg); border-color:var(--red); color:var(--red)}
+
+/* Intercept card */
+.section-title{font-size:13px; font-weight:600; margin-bottom:10px; display:flex; align-items:center; gap:8px}
+.intercept{
+  background:#fff; border:1px solid var(--rule); border-left:3px solid var(--red);
+  border-radius:6px; padding:16px 18px; margin-bottom:28px;
+}
+.intercept-head{display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; gap:12px}
+.intercept-tag{
+  font-family:var(--mono); font-size:10px; padding:2px 8px; border-radius:3px;
+  background:var(--red-bg); color:var(--red); letter-spacing:.06em; font-weight:600;
+  margin-right:8px;
+}
+.intercept-title{font-size:13px; font-weight:600}
+.intercept-time{font-size:11px; color:var(--ink-faint); white-space:nowrap}
+.intercept-body{font-size:13px; color:var(--ink-soft); line-height:1.7; margin-bottom:12px}
+.intercept-body code{
+  font-family:var(--mono); font-size:12px; background:var(--paper-warm); padding:1px 5px; border-radius:3px;
+}
+.intercept-actions{display:flex; gap:8px}
+.btn{
+  font-family:var(--serif); font-size:12px; padding:7px 14px; border-radius:4px;
+  border:1px solid var(--rule); background:#fff; color:var(--ink); cursor:pointer;
+  transition:all .12s;
+}
+.btn:hover{border-color:var(--teal); color:var(--teal)}
+.btn.primary{background:var(--ink); color:#fff; border-color:var(--ink)}
+.btn.primary:hover{background:var(--teal); border-color:var(--teal)}
+
+/* Authority table */
+.authority{
+  background:#fff; border:1px solid var(--rule); border-radius:6px; padding:4px;
+}
+.authority table{width:100%; font-size:13px; border-collapse:collapse}
+.authority td{padding:12px 16px; border-bottom:1px solid var(--rule)}
+.authority tr:last-child td{border-bottom:none}
+.authority td:first-child{color:var(--ink-soft)}
+.authority td:last-child{text-align:right; font-weight:600; font-family:var(--mono); font-size:12px}
+.can{color:var(--green)}
+.never{color:var(--red)}
+
+/* Footer */
+.console-footer{
+  font-family:var(--mono); font-size:10px; color:var(--ink-faint);
+  letter-spacing:.06em; text-align:center; padding:16px; border-top:1px solid var(--rule);
+}
+
+/* Live dot */
+.live{
+  display:inline-block; width:6px; height:6px; border-radius:50%;
+  background:var(--green); margin-right:6px;
+  animation:pulse 1.6s ease-in-out infinite;
+}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+@media (max-width: 860px){
+  .metrics{grid-template-columns:repeat(2,1fr)}
+  .severity-grid{grid-template-columns:repeat(2,1fr)}
+  .sidebar{display:none}
+}
+
+a:focus-visible, button:focus-visible, input:focus-visible{
+  outline:2px solid var(--teal); outline-offset:2px;
+}
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════
+     AUTH SCREEN
+     ════════════════════════════════════════ -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">Caelnex</div>
+    <div class="auth-sub">Mission Console — internal access only</div>
+
+    <form id="login-form">
+      <div class="field">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" autocomplete="username" required>
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" autocomplete="current-password" required>
+      </div>
+      <button type="submit" class="auth-submit">Sign in</button>
+      <div class="auth-error" id="auth-error">Invalid credentials. Try again.</div>
+    </form>
+
+    <div class="auth-meta">
+      <div><span class="dot"></span>Identity provider: Keycloak (offline-capable)</div>
+      <div style="margin-top:4px">Session-only access. No data leaves this network.</div>
+      <div style="margin-top:4px">Demo mode — any non-empty credentials accepted.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     DASHBOARD
+     ════════════════════════════════════════ -->
+<div id="dashboard">
+
+  <div class="topbar">
+    <div class="logo">Caelnex</div>
+    <div class="sep"></div>
+    <div class="campaign">Campaign ELK-001 · T-minus 14d 06h</div>
+    <div class="spacer"></div>
+    <div class="session">
+      <span class="live"></span>
+      <span id="session-user">—</span>
+      <span class="role" id="session-role">—</span>
+      <button class="logout-btn" id="logout-btn">Sign out</button>
+    </div>
+  </div>
+
+  <div class="layout">
+    <div class="sidebar">
+      <div class="nav-group">
+        <div class="nav-group-title">Console</div>
+        <div class="nav-item active">
+          <span class="nav-dot" style="background:var(--teal)"></span>
+          Organ 7 — overview
+        </div>
+        <div class="nav-item">
+          <span class="nav-dot" style="background:var(--ink-faint)"></span>
+          Readiness board
+        </div>
+        <div class="nav-item">
+          <span class="nav-dot" style="background:var(--ink-faint)"></span>
+          Audit log
+        </div>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-title">Organs</div>
+        <div class="nav-item"><span class="nav-dot" style="background:var(--green)"></span>O1 Engineering</div>
+        <div class="nav-item"><span class="nav-dot" style="background:var(--green)"></span>O2 Flight SW</div>
+        <div class="nav-item"><span class="nav-dot" style="background:var(--amber)"></span>O3 Manufacturing<span class="nav-badge">1</span></div>
+        <div class="nav-item"><span class="nav-dot" style="background:var(--red)"></span>O4 Supply chain<span class="nav-badge red">1</span></div>
+        <div class="nav-item"><span class="nav-dot" style="background:var(--green)"></span>O5 Launch ops</div>
+        <div class="nav-item"><span class="nav-dot" style="background:var(--amber)"></span>O6 Compliance</div>
+      </div>
+    </div>
+
+    <div class="main">
+      <h1>Organ 7 — live console</h1>
+      <div class="sub">Reads every node. Writes nothing without a rule. Every verdict below traces to a deterministic check.</div>
+
+      <div class="metrics">
+        <div class="metric good">
+          <div class="val">47 / 47</div>
+          <div class="lbl">SENSORS REPORTING</div>
+        </div>
+        <div class="metric">
+          <div class="val">2,184</div>
+          <div class="lbl">GRAPH NODES IN SCOPE</div>
+        </div>
+        <div class="metric">
+          <div class="val">9,402</div>
+          <div class="lbl">AUDIT EVENTS, CHAINED</div>
+        </div>
+        <div class="metric warn">
+          <div class="val">3</div>
+          <div class="lbl">INTERCEPTS TODAY — HELD FOR REVIEW</div>
+        </div>
+      </div>
+
+      <div class="section-title">Severity across all six organs</div>
+      <div class="severity-grid">
+        <div class="sev-card green"><div class="name">O1 Engineering</div><div class="status">Nominal</div></div>
+        <div class="sev-card green"><div class="name">O2 Flight SW</div><div class="status">Nominal</div></div>
+        <div class="sev-card amber"><div class="name">O3 Manufacturing</div><div class="status">Watching</div></div>
+        <div class="sev-card red"><div class="name">O4 Supply chain</div><div class="status">Hold</div></div>
+        <div class="sev-card green"><div class="name">O5 Launch ops</div><div class="status">Nominal</div></div>
+        <div class="sev-card amber"><div class="name">O6 Compliance</div><div class="status">Watching</div></div>
+      </div>
+
+      <div class="section-title">Active intercept — requires human disposition</div>
+      <div class="intercept">
+        <div class="intercept-head">
+          <div>
+            <span class="intercept-tag">RED · O7-CERT-001</span>
+            <span class="intercept-title">Boundary clustering — Supplier SPI-ALUM-04</span>
+          </div>
+          <div class="intercept-time">14:22 today</div>
+        </div>
+        <div class="intercept-body">
+          9 of 9 recent certifications sit within 5% of the specification limit.
+          Batch <code>BR-4471-A</code> held at receiving — not propagated to the graph.
+          Rule 0: this was flagged at batch 3 of 9, preserving requalification time
+          before any affected material reaches integration.
+        </div>
+        <div class="intercept-actions">
+          <button class="btn primary">View full analysis</button>
+          <button class="btn">Override process</button>
+        </div>
+      </div>
+
+      <div class="section-title">Authority — what Organ 7 can and cannot do</div>
+      <div class="authority">
+        <table>
+          <tr><td>Hold a submission pending review</td><td class="can">Can act alone</td></tr>
+          <tr><td>Raise severity colour on readiness board</td><td class="can">Can act alone</td></tr>
+          <tr><td>Surface a prior decision node to current crew</td><td class="can">Can act alone</td></tr>
+          <tr><td>Clear a hold without human sign-off</td><td class="never">Never</td></tr>
+          <tr><td>Delete or edit a past graph node</td><td class="never">Never — append-only</td></tr>
+          <tr><td>Override a hold below VP Engineering level</td><td class="never">Never</td></tr>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="console-footer">
+    CAELNEX MISSION CONSOLE · INTRANET DEPLOYMENT · SESSION ENCRYPTED · NO EXTERNAL CALLS
+  </div>
+</div>
+
+<script>
+/**
+ * AUTH — demo implementation.
+ *
+ * PRODUCTION REPLACEMENT: this block is replaced by Keycloak's
+ * JavaScript adapter (keycloak-js). The flow becomes:
+ *   1. keycloak.init({ onLoad: 'login-required' })
+ *   2. Keycloak redirects to the IdP login page (can be self-hosted,
+ *      fully offline on the intranet — no external dependency)
+ *   3. On success, keycloak.tokenParsed gives { preferred_username, realm_access.roles }
+ *   4. Token is attached to every GraphQL request as a Bearer header
+ *   5. Token refresh is handled automatically by the adapter
+ *
+ * Session storage below is sessionStorage only — cleared on tab close.
+ * No credentials are ever persisted to disk in this demo.
+ */
+
+const SESSION_KEY = 'caelnex_session';
+
+function showDashboard(username, role) {
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('dashboard').classList.add('active');
+  document.getElementById('session-user').textContent = username;
+  document.getElementById('session-role').textContent = role;
+}
+
+function showAuth() {
+  document.getElementById('auth-screen').style.display = 'flex';
+  document.getElementById('dashboard').classList.remove('active');
+  document.getElementById('username').value = '';
+  document.getElementById('password').value = '';
+}
+
+// Restore session if present (survives page reload, not tab close)
+const existing = sessionStorage.getItem(SESSION_KEY);
+if (existing) {
+  try {
+    const session = JSON.parse(existing);
+    showDashboard(session.username, session.role);
+  } catch (e) { /* corrupt session, ignore */ }
+}
+
+document.getElementById('login-form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value;
+  const errorEl = document.getElementById('auth-error');
+
+  if (!username || !password) {
+    errorEl.classList.add('show');
+    return;
+  }
+
+  errorEl.classList.remove('show');
+
+  // Demo role assignment — production reads this from the Keycloak token's
+  // realm_access.roles claim, not from client-side logic.
+  let role = 'Viewer';
+  if (username.toLowerCase().includes('admin')) role = 'VP Engineering';
+  else if (username.toLowerCase().includes('lead')) role = 'Organ Lead';
+
+  const session = { username, role, issuedAt: Date.now() };
+  sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  showDashboard(username, role);
+});
+
+document.getElementById('logout-btn').addEventListener('click', () => {
+  sessionStorage.removeItem(SESSION_KEY);
+  showAuth();
+});
+</script>
+
+</body>
+</html>
